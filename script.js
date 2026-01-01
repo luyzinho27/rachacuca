@@ -27,6 +27,7 @@ let authButtons, userInfoContainer, dbStatus;
 let playGuestBtn, welcomeLoginBtn, welcomeRegisterBtn, quickPlayBtn;
 let heroPlayBtn, heroHowtoBtn, changeThemeBtn, themeCards;
 let instructionsModal, startPlayingBtn;
+let imageUploadModal, imageUploadForm, imageFileInput, useImageBtn, imagePreviewContainer;
 
 // Variáveis do jogo
 let board = [];
@@ -39,6 +40,7 @@ let gameCompleted = false;
 let currentDifficulty = 'normal';
 let gameActive = false;
 let currentTheme = 'numbers';
+let customImageData = null;
 
 // Temas disponíveis
 const themes = {
@@ -77,6 +79,12 @@ const themes = {
         items: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '😍', '😘', '😋', '😜', '🤪', null],
         className: 'emoji',
         solutionText: "😀 😃 😄 😁\n😆 😅 😂 🤣\n😊 😇 😍 😘\n😋 😜 🤪"
+    },
+    'custom-image': {
+        name: "Imagem Personalizada",
+        items: [],
+        className: 'image-piece',
+        solutionText: "Imagem Personalizada"
     }
 };
 
@@ -211,6 +219,13 @@ function initializeDOMElements() {
     // Modal de instruções
     instructionsModal = document.getElementById('instructions-modal');
     startPlayingBtn = document.getElementById('start-playing-btn');
+    
+    // Modal de upload de imagem
+    imageUploadModal = document.getElementById('image-upload-modal');
+    imageUploadForm = document.getElementById('image-upload-form');
+    imageFileInput = document.getElementById('image-file');
+    useImageBtn = document.getElementById('use-image-btn');
+    imagePreviewContainer = document.getElementById('image-preview-container');
 }
 
 // Inicializar o jogo
@@ -224,7 +239,11 @@ function initializeGame() {
 
 // Criar o tabuleiro
 function createBoard() {
-    board = [...themes[currentTheme].items];
+    if (currentTheme === 'custom-image' && customImageData) {
+        board = [...customImageData];
+    } else {
+        board = [...themes[currentTheme].items];
+    }
 }
 
 // Renderizar o tabuleiro com suporte a drag and drop
@@ -240,12 +259,26 @@ function renderBoard() {
             tile.textContent = '';
             emptyTileIndex = index;
         } else {
-            tile.textContent = value;
+            // Verificar se é uma URL de imagem
+            if (typeof value === 'string' && value.startsWith('data:image')) {
+                tile.style.backgroundImage = `url(${value})`;
+                tile.textContent = '';
+            } else {
+                tile.textContent = value;
+            }
+            
             tile.dataset.index = index;
             tile.dataset.value = value;
             
             // Verificar se a peça está na posição correta
-            if (value === themes[currentTheme].items[index]) {
+            let correctValue;
+            if (currentTheme === 'custom-image' && customImageData) {
+                correctValue = customImageData[index];
+            } else {
+                correctValue = themes[currentTheme].items[index];
+            }
+            
+            if (value === correctValue) {
                 tile.classList.add('correct-position');
             }
             
@@ -483,7 +516,11 @@ function shuffleBoard() {
 // Mostrar a solução
 function showSolution() {
     // Criar tabuleiro ordenado
-    board = [...themes[currentTheme].items];
+    if (currentTheme === 'custom-image' && customImageData) {
+        board = [...customImageData];
+    } else {
+        board = [...themes[currentTheme].items];
+    }
     emptyTileIndex = 15;
     renderBoard();
     
@@ -518,7 +555,14 @@ function resetGame() {
 function showHint() {
     // Encontrar a primeira peça fora do lugar que pode ser movida
     for (let i = 0; i < board.length; i++) {
-        if (board[i] !== null && board[i] !== themes[currentTheme].items[i] && isMovable(i)) {
+        let correctValue;
+        if (currentTheme === 'custom-image' && customImageData) {
+            correctValue = customImageData[i];
+        } else {
+            correctValue = themes[currentTheme].items[i];
+        }
+        
+        if (board[i] !== null && board[i] !== correctValue && isMovable(i)) {
             const tile = document.querySelector(`.puzzle-tile[data-index="${i}"]`);
             tile.style.boxShadow = '0 0 15px 5px gold';
             tile.style.transform = 'scale(1.05)';
@@ -539,7 +583,14 @@ function showHint() {
 // Verificar vitória
 function checkWin() {
     for (let i = 0; i < 15; i++) {
-        if (board[i] !== themes[currentTheme].items[i]) {
+        let correctValue;
+        if (currentTheme === 'custom-image' && customImageData) {
+            correctValue = customImageData[i];
+        } else {
+            correctValue = themes[currentTheme].items[i];
+        }
+        
+        if (board[i] !== correctValue) {
             return false;
         }
     }
@@ -590,6 +641,9 @@ async function saveScoreAutomatically() {
         await db.collection('scores').add(scoreData);
         
         console.log("Pontuação salva automaticamente");
+        
+        // Atualizar estatísticas globais
+        loadGlobalStats();
         
     } catch (error) {
         console.error("Erro ao salvar pontuação automaticamente:", error);
@@ -647,7 +701,7 @@ function createSolutionBoard() {
         lineDiv.style.display = 'flex';
         lineDiv.style.justifyContent = 'center';
         lineDiv.style.alignItems = 'center';
-        lineDiv.style.fontSize = currentTheme === 'numbers' ? '1.2rem' : '1.5rem';
+        lineDiv.style.fontSize = currentTheme === 'numbers' ? '1.1rem' : '1.4rem';
         lineDiv.style.fontWeight = '700';
         lineDiv.style.color = 'var(--primary-color)';
         lineDiv.textContent = line;
@@ -717,7 +771,14 @@ function setupEventListeners() {
         themeCards.forEach(card => {
             card.addEventListener('click', function() {
                 const theme = this.dataset.theme;
-                changeTheme(theme);
+                if (theme === 'custom-image') {
+                    // Abrir modal para upload de imagem
+                    imageUploadModal.style.display = 'flex';
+                    imagePreviewContainer.style.display = 'none';
+                    imageUploadForm.reset();
+                } else {
+                    changeTheme(theme);
+                }
             });
         });
     }
@@ -828,6 +889,15 @@ function setupEventListeners() {
     if (userSearch) userSearch.addEventListener('input', loadAdminUsers);
     if (clearScoresBtn) clearScoresBtn.addEventListener('click', clearOldScores);
     
+    // Upload de imagem
+    if (imageUploadForm) {
+        imageUploadForm.addEventListener('submit', handleImageUpload);
+    }
+    
+    if (useImageBtn) {
+        useImageBtn.addEventListener('click', useCustomImage);
+    }
+    
     // Embaralhar o tabuleiro inicialmente
     shuffleBoard();
 }
@@ -837,7 +907,7 @@ function playAsGuest() {
     isGuest = true;
     currentUser = null;
     welcomeScreen.classList.remove('active');
-    welcomeScreen.classList.add('hidden');
+    welcomeScreen.style.display = 'none';
     mainApp.classList.add('active');
     updateUIForLoggedOutUser();
     showSection('game-section');
@@ -848,7 +918,7 @@ function quickPlay() {
     isGuest = true;
     currentUser = null;
     welcomeScreen.classList.remove('active');
-    welcomeScreen.classList.add('hidden');
+    welcomeScreen.style.display = 'none';
     mainApp.classList.add('active');
     updateUIForLoggedOutUser();
     showSection('game-section');
@@ -1106,7 +1176,7 @@ async function handleLogin(e) {
             // Se estava na tela de boas-vindas, ir para o jogo
             if (welcomeScreen.classList.contains('active')) {
                 welcomeScreen.classList.remove('active');
-                welcomeScreen.classList.add('hidden');
+                welcomeScreen.style.display = 'none';
                 mainApp.classList.add('active');
                 showSection('game-section');
             }
@@ -1207,7 +1277,7 @@ async function handleRegister(e) {
             // Se estava na tela de boas-vindas, ir para o jogo
             if (welcomeScreen.classList.contains('active')) {
                 welcomeScreen.classList.remove('active');
-                welcomeScreen.classList.add('hidden');
+                welcomeScreen.style.display = 'none';
                 mainApp.classList.add('active');
                 showSection('game-section');
             }
@@ -1323,8 +1393,6 @@ function clearFormMessage(element) {
 function changeTheme(theme) {
     if (!themes[theme]) return;
     
-    currentTheme = theme;
-    
     // Atualizar cards de tema
     themeCards.forEach(card => {
         card.classList.remove('active');
@@ -1332,6 +1400,8 @@ function changeTheme(theme) {
             card.classList.add('active');
         }
     });
+    
+    currentTheme = theme;
     
     // Atualizar nome do tema na interface
     document.getElementById('current-theme').textContent = themes[theme].name;
@@ -1345,6 +1415,119 @@ function changeTheme(theme) {
     if (themesSection.classList.contains('active')) {
         showSection('game-section');
     }
+}
+
+// Manipular upload de imagem
+function handleImageUpload(e) {
+    e.preventDefault();
+    
+    const file = imageFileInput.files[0];
+    const messageElement = document.getElementById('image-upload-message');
+    const previewBoard = document.getElementById('image-preview-board');
+    
+    if (!file) {
+        showFormMessage(messageElement, 'Por favor, selecione uma imagem.', 'error');
+        return;
+    }
+    
+    // Verificar se é uma imagem
+    if (!file.type.match('image.*')) {
+        showFormMessage(messageElement, 'Por favor, selecione um arquivo de imagem.', 'error');
+        return;
+    }
+    
+    showFormMessage(messageElement, 'Processando imagem...', 'info');
+    
+    const reader = new FileReader();
+    
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            // Criar um canvas para dividir a imagem
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Tamanho de cada peça (dividir em 4x4)
+            const pieceWidth = img.width / 4;
+            const pieceHeight = img.height / 4;
+            
+            // Limpar preview board
+            previewBoard.innerHTML = '';
+            
+            // Array para armazenar as partes da imagem
+            const imagePieces = [];
+            
+            // Gerar as 16 peças (15 visíveis + 1 vazia)
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    // Criar canvas para cada peça
+                    const pieceCanvas = document.createElement('canvas');
+                    pieceCanvas.width = pieceWidth;
+                    pieceCanvas.height = pieceHeight;
+                    const pieceCtx = pieceCanvas.getContext('2d');
+                    
+                    // Desenhar a parte da imagem no canvas da peça
+                    pieceCtx.drawImage(
+                        img,
+                        col * pieceWidth,
+                        row * pieceHeight,
+                        pieceWidth,
+                        pieceHeight,
+                        0, 0,
+                        pieceWidth,
+                        pieceHeight
+                    );
+                    
+                    // Converter para data URL
+                    const dataUrl = pieceCanvas.toDataURL('image/png');
+                    
+                    // Adicionar ao array (a última peça será null para o espaço vazio)
+                    if (row === 3 && col === 3) {
+                        imagePieces.push(null);
+                    } else {
+                        imagePieces.push(dataUrl);
+                        
+                        // Criar elemento de pré-visualização
+                        const pieceElement = document.createElement('div');
+                        pieceElement.className = 'puzzle-tile image-piece';
+                        pieceElement.style.backgroundImage = `url(${dataUrl})`;
+                        previewBoard.appendChild(pieceElement);
+                    }
+                }
+            }
+            
+            // Armazenar os dados da imagem
+            customImageData = imagePieces;
+            
+            // Mostrar preview
+            imagePreviewContainer.style.display = 'block';
+            
+            showFormMessage(messageElement, 'Imagem processada com sucesso! Clique em "Usar Esta Imagem" para aplicar.', 'success');
+        };
+        
+        img.src = event.target.result;
+    };
+    
+    reader.readAsDataURL(file);
+}
+
+// Usar imagem personalizada
+function useCustomImage() {
+    if (!customImageData) {
+        alert('Por favor, faça upload de uma imagem primeiro.');
+        return;
+    }
+    
+    // Fechar modal
+    imageUploadModal.style.display = 'none';
+    
+    // Mudar para o tema de imagem personalizada
+    changeTheme('custom-image');
+    
+    // Limpar formulário
+    imageUploadForm.reset();
+    imagePreviewContainer.style.display = 'none';
+    clearFormMessage(document.getElementById('image-upload-message'));
 }
 
 // Carregar ranking
@@ -1648,7 +1831,7 @@ async function openEditUserModal(userId) {
     }
 }
 
-// Manipular edição de usuário (função modificada para receber userId como parâmetro)
+// Manipular edição de usuário
 async function handleEditUser(userId) {
     const name = document.getElementById('edit-user-name').value;
     const email = document.getElementById('edit-user-email').value;
@@ -1959,4 +2142,3 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, errorMessage, 'error');
     }
 }
-
