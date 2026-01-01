@@ -325,6 +325,7 @@
                             <option value="numbers">Números</option>
                             <option value="words">Palavras</option>
                             <option value="animals">Animais</option>
+                            <option value="custom-image">Imagem Personalizada</option>
                         </select>
                     </div>
                 </div>
@@ -423,12 +424,24 @@
                                 <p>Expressões e emojis divertidos</p>
                             </div>
                         </div>
+                        
+                        <div class="theme-card" data-theme="custom-image">
+                            <div class="theme-preview">
+                                <div class="theme-example">
+                                    <i class="fas fa-image" style="font-size: 2.5rem; color: white;"></i>
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h3>Imagem Personalizada</h3>
+                                <p>Faça upload de uma imagem para criar seu próprio quebra-cabeça</p>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="theme-instructions">
                         <h3><i class="fas fa-lightbulb"></i> Dica</h3>
                         <p>Clique em um tema para selecioná-lo. O tema será aplicado imediatamente ao seu jogo.</p>
-                        <p>Alguns temas podem ser mais desafiadores que outros!</p>
+                        <p>Para usar uma imagem personalizada, clique no tema "Imagem Personalizada" e faça o upload de uma imagem.</p>
                     </div>
                 </div>
             </section>
@@ -487,6 +500,7 @@
                                     <option value="numbers">Números</option>
                                     <option value="words">Palavras</option>
                                     <option value="animals">Animais</option>
+                                    <option value="custom-image">Imagem Personalizada</option>
                                 </select>
                                 <input type="date" id="admin-score-date" class="filter-select">
                                 <button id="clear-scores-btn" class="btn btn-danger">
@@ -768,6 +782,41 @@
                 <div class="modal-actions">
                     <button id="start-playing-btn" class="btn btn-primary">
                         <i class="fas fa-play"></i> Começar a Jogar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Upload de Imagem -->
+    <div id="image-upload-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-image"></i> Imagem Personalizada</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="upload-instructions">
+                    <p>Faça upload de uma imagem para criar um quebra-cabeça personalizado. A imagem será dividida em 15 peças.</p>
+                    <p><strong>Recomendação:</strong> Use uma imagem quadrada para melhor resultado.</p>
+                </div>
+                <form id="image-upload-form">
+                    <div class="form-group">
+                        <label for="image-file">Selecione uma imagem</label>
+                        <input type="file" id="image-file" accept="image/*" required>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-upload"></i> Criar Quebra-Cabeça
+                        </button>
+                    </div>
+                </form>
+                <div id="image-upload-message" class="form-message"></div>
+                <div id="image-preview-container" style="display:none;">
+                    <h3>Prévia do Quebra-Cabeça</h3>
+                    <div id="image-preview-board" class="puzzle-board"></div>
+                    <button id="use-image-btn" class="btn btn-primary btn-block" style="margin-top: 15px;">
+                        <i class="fas fa-check"></i> Usar Esta Imagem
                     </button>
                 </div>
             </div>
