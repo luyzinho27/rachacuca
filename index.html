@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Racha Cuca - Jogo de Quebra-Cabeça</title>
+    <title>Racha Cuca - Jogo Clássico de Quebra-Cabeça</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
@@ -14,19 +14,106 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <div class="container">
-        <!-- Header com navegação -->
+    <!-- Tela de Boas-vindas / Login -->
+    <div id="welcome-screen" class="welcome-screen active">
+        <div class="welcome-container">
+            <div class="welcome-header">
+                <div class="welcome-logo">
+                    <h1><i class="fas fa-puzzle-piece"></i> RACHA CUCA</h1>
+                    <p class="welcome-subtitle">Quebra-cabeça clássico brasileiro</p>
+                </div>
+                <div class="welcome-animation">
+                    <div class="puzzle-piece-anim piece-1">1</div>
+                    <div class="puzzle-piece-anim piece-2">2</div>
+                    <div class="puzzle-piece-anim piece-3">3</div>
+                    <div class="puzzle-piece-anim piece-4">4</div>
+                    <div class="puzzle-piece-anim piece-5">5</div>
+                    <div class="puzzle-piece-anim piece-6">6</div>
+                    <div class="puzzle-piece-anim piece-7">7</div>
+                    <div class="puzzle-piece-anim piece-8">8</div>
+                    <div class="puzzle-piece-anim piece-9">9</div>
+                    <div class="puzzle-piece-anim piece-10">10</div>
+                    <div class="puzzle-piece-anim piece-11">11</div>
+                    <div class="puzzle-piece-anim piece-12">12</div>
+                    <div class="puzzle-piece-anim piece-13">13</div>
+                    <div class="puzzle-piece-anim piece-14">14</div>
+                    <div class="puzzle-piece-anim piece-15">15</div>
+                    <div class="puzzle-piece-anim piece-empty"></div>
+                </div>
+            </div>
+            
+            <div class="welcome-content">
+                <div class="welcome-message">
+                    <h2>Bem-vindo ao Racha Cuca!</h2>
+                    <p>O clássico jogo de quebra-cabeça que desafia sua mente. Arraste as peças para organizá-las na ordem correta.</p>
+                    <div class="features">
+                        <div class="feature">
+                            <i class="fas fa-gamepad"></i>
+                            <span>Múltiplos temas</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-trophy"></i>
+                            <span>Sistema de ranking</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-users"></i>
+                            <span>Competição online</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>Totalmente responsivo</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="welcome-auth">
+                    <div class="auth-box">
+                        <h3>Comece a Jogar</h3>
+                        <p>Jogue como visitante ou faça login para salvar suas pontuações e competir no ranking.</p>
+                        
+                        <div class="auth-buttons">
+                            <button id="play-guest-btn" class="btn btn-primary btn-large">
+                                <i class="fas fa-user"></i> Jogar como Visitante
+                            </button>
+                            <button id="welcome-login-btn" class="btn btn-secondary btn-large">
+                                <i class="fas fa-sign-in-alt"></i> Fazer Login
+                            </button>
+                            <button id="welcome-register-btn" class="btn btn-outline btn-large">
+                                <i class="fas fa-user-plus"></i> Criar Conta
+                            </button>
+                        </div>
+                        
+                        <div class="quick-play">
+                            <p>Ou jogue rapidamente:</p>
+                            <button id="quick-play-btn" class="btn btn-small">
+                                <i class="fas fa-play-circle"></i> Jogar Agora
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="welcome-footer">
+                <p>Desenvolvido com <i class="fas fa-heart"></i> | Baseado no jogo clássico Racha Cuca</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aplicação Principal (inicialmente oculta) -->
+    <div id="main-app" class="container">
+        <!-- Header -->
         <header class="header">
             <div class="logo">
-                <h1><i class="fas fa-puzzle-piece"></i> RACHA-CUCA</h1>
+                <h1><i class="fas fa-puzzle-piece"></i> RACHA CUCA</h1>
                 <p class="subtitle">Quebra-cabeça numérico clássico</p>
             </div>
             
             <nav class="main-nav">
                 <ul>
                     <li><a href="#" id="nav-home" class="nav-link active"><i class="fas fa-home"></i> Início</a></li>
+                    <li><a href="#" id="nav-game" class="nav-link"><i class="fas fa-gamepad"></i> Jogar</a></li>
                     <li><a href="#" id="nav-ranking" class="nav-link"><i class="fas fa-trophy"></i> Ranking</a></li>
-                    <li><a href="#" id="nav-profile" class="nav-link"><i class="fas fa-user"></i> Perfil</a></li>
+                    <li><a href="#" id="nav-themes" class="nav-link"><i class="fas fa-palette"></i> Temas</a></li>
                     <li id="admin-nav-item" style="display: none;">
                         <a href="#" id="nav-admin" class="nav-link"><i class="fas fa-cog"></i> Admin</a>
                     </li>
@@ -51,10 +138,89 @@
             </div>
         </header>
 
-        <!-- Conteúdo principal -->
+        <!-- Conteúdo Principal -->
         <main class="main-content">
-            <!-- Seção do Jogo (Página inicial) -->
-            <section id="game-section" class="page-section active">
+            <!-- Página Inicial -->
+            <section id="home-section" class="page-section active">
+                <div class="hero-section">
+                    <div class="hero-content">
+                        <h2>Desafie sua mente com o clássico Racha Cuca!</h2>
+                        <p>Organize as peças na ordem correta no menor tempo e com menos movimentos possíveis.</p>
+                        <div class="hero-buttons">
+                            <button id="hero-play-btn" class="btn btn-primary btn-large">
+                                <i class="fas fa-play"></i> Jogar Agora
+                            </button>
+                            <button id="hero-howto-btn" class="btn btn-secondary btn-large">
+                                <i class="fas fa-question-circle"></i> Como Jogar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hero-preview">
+                        <div class="preview-board">
+                            <!-- Preview do jogo -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="features-section">
+                    <h2>Recursos do Jogo</h2>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-drag"></i>
+                            </div>
+                            <h3>Arraste e Solte</h3>
+                            <p>Mova as peças arrastando-as para o espaço vazio, como no jogo físico.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <h3>Múltiplos Temas</h3>
+                            <p>Jogue com números, palavras, figuras e muito mais.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <h3>Sistema de Ranking</h3>
+                            <p>Competir com outros jogadores e subir no ranking.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3>Estatísticas Detalhadas</h3>
+                            <p>Acompanhe seu progresso e melhore suas habilidades.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stats-section">
+                    <h2>Estatísticas Globais</h2>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value" id="total-games-global">0</div>
+                            <div class="stat-label">Jogos Concluídos</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="total-players">0</div>
+                            <div class="stat-label">Jogadores Ativos</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="avg-moves-global">0</div>
+                            <div class="stat-label">Média de Movimentos</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="avg-time-global">0</div>
+                            <div class="stat-label">Tempo Médio</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção do Jogo -->
+            <section id="game-section" class="page-section">
                 <div class="game-header">
                     <div class="game-info">
                         <div class="info-box">
@@ -64,6 +230,10 @@
                         <div class="info-box">
                             <span class="info-label">Tempo</span>
                             <span id="timer" class="info-value">00:00</span>
+                        </div>
+                        <div class="info-box">
+                            <span class="info-label">Tema</span>
+                            <span id="current-theme" class="info-value">Números</span>
                         </div>
                         <div class="info-box">
                             <span class="info-label">Dificuldade</span>
@@ -91,6 +261,9 @@
                             <button id="hint-btn" class="btn btn-secondary">
                                 <i class="fas fa-question-circle"></i> Dica
                             </button>
+                            <button id="change-theme-btn" class="btn btn-secondary">
+                                <i class="fas fa-palette"></i> Mudar Tema
+                            </button>
                         </div>
                     </div>
                     
@@ -107,12 +280,6 @@
                                     <button class="difficulty-btn" data-difficulty="normal">Normal</button>
                                     <button class="difficulty-btn" data-difficulty="hard">Difícil</button>
                                 </div>
-                            </div>
-                            
-                            <div id="save-score-container" style="display: none;">
-                                <button id="save-score-btn" class="btn btn-primary btn-block">
-                                    <i class="fas fa-save"></i> Salvar Pontuação
-                                </button>
                             </div>
                             
                             <div class="completion-message" id="completion-message">
@@ -153,6 +320,12 @@
                             <option value="week">Esta Semana</option>
                             <option value="month">Este Mês</option>
                         </select>
+                        <select id="ranking-theme" class="filter-select">
+                            <option value="all">Todos os Temas</option>
+                            <option value="numbers">Números</option>
+                            <option value="words">Palavras</option>
+                            <option value="animals">Animais</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -167,56 +340,95 @@
                 </div>
             </section>
 
-            <!-- Seção de Perfil -->
-            <section id="profile-section" class="page-section">
+            <!-- Seção de Temas -->
+            <section id="themes-section" class="page-section">
                 <div class="section-header">
-                    <h2><i class="fas fa-user"></i> Meu Perfil</h2>
+                    <h2><i class="fas fa-palette"></i> Escolha seu Tema</h2>
+                    <p>Selecione um tema para personalizar sua experiência de jogo</p>
                 </div>
                 
-                <div class="profile-container">
-                    <div class="profile-info">
-                        <div class="profile-avatar">
-                            <i class="fas fa-user-circle"></i>
+                <div class="themes-container">
+                    <div class="themes-grid">
+                        <div class="theme-card active" data-theme="numbers">
+                            <div class="theme-preview">
+                                <div class="theme-example">
+                                    1 2 3 4<br>5 6 7 8<br>9 10 11 12<br>13 14 15
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h3>Números</h3>
+                                <p>O tema clássico com números de 1 a 15</p>
+                            </div>
+                            <div class="theme-badge">
+                                <i class="fas fa-check"></i> Ativo
+                            </div>
                         </div>
-                        <div class="profile-details">
-                            <h3 id="profile-name">Carregando...</h3>
-                            <p id="profile-email"></p>
-                            <p id="profile-role"></p>
-                            <p id="profile-joined"></p>
+                        
+                        <div class="theme-card" data-theme="words">
+                            <div class="theme-preview">
+                                <div class="theme-example">
+                                    R A C H A<br>C U C A &nbsp;<br>M A T O<br>A T A R
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h3>Palavras</h3>
+                                <p>Monte palavras deslizando as letras</p>
+                            </div>
+                        </div>
+                        
+                        <div class="theme-card" data-theme="animals">
+                            <div class="theme-preview">
+                                <div class="theme-example">
+                                    🐶 🐱 🐭<br>🐹 🐰 🦊<br>🐻 🐼 🐨<br>🦁 🐮 🐷
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h3>Animais</h3>
+                                <p>Imagens fofas de animais para montar</p>
+                            </div>
+                        </div>
+                        
+                        <div class="theme-card" data-theme="fruits">
+                            <div class="theme-preview">
+                                <div class="theme-example">
+                                    🍎 🍌 🍇<br>🍓 🍉 🍊<br>🍑 🍍 🥭<br>🍒 🥝 🍏
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h3>Frutas</h3>
+                                <p>Coloridas frutas para organizar</p>
+                            </div>
+                        </div>
+                        
+                        <div class="theme-card" data-theme="flags">
+                            <div class="theme-preview">
+                                <div class="theme-example">
+                                    🇧🇷 🇺🇸 🇨🇳<br>🇯🇵 🇩🇪 🇫🇷<br>🇮🇹 🇪🇸 🇬🇧<br>🇨🇦 🇦🇺 🇰🇷
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h3>Bandeiras</h3>
+                                <p>Bandeiras de diversos países</p>
+                            </div>
+                        </div>
+                        
+                        <div class="theme-card" data-theme="emoji">
+                            <div class="theme-preview">
+                                <div class="theme-example">
+                                    😀 😃 😄<br>😁 😆 😅<br>😂 🤣 😊<br>😇 😍 😘
+                                </div>
+                            </div>
+                            <div class="theme-info">
+                                <h3>Emojis</h3>
+                                <p>Expressões e emojis divertidos</p>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="profile-stats">
-                        <h3><i class="fas fa-chart-line"></i> Minhas Estatísticas</h3>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-value" id="total-games">0</div>
-                                <div class="stat-label">Jogos Concluídos</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="best-moves">-</div>
-                                <div class="stat-label">Melhor (movimentos)</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="best-time">-</div>
-                                <div class="stat-label">Melhor (tempo)</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value" id="avg-moves">-</div>
-                                <div class="stat-label">Média de Movimentos</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="profile-scores">
-                        <h3><i class="fas fa-history"></i> Minhas Últimas Pontuações</h3>
-                        <div id="user-scores-loading" class="loading-spinner">
-                            <div class="spinner"></div>
-                            <p>Carregando pontuações...</p>
-                        </div>
-                        <div id="user-scores-list" class="scores-list">
-                            <!-- Pontuações do usuário serão carregadas via JavaScript -->
-                        </div>
+                    <div class="theme-instructions">
+                        <h3><i class="fas fa-lightbulb"></i> Dica</h3>
+                        <p>Clique em um tema para selecioná-lo. O tema será aplicado imediatamente ao seu jogo.</p>
+                        <p>Alguns temas podem ser mais desafiadores que outros!</p>
                     </div>
                 </div>
             </section>
@@ -225,7 +437,7 @@
             <section id="admin-section" class="page-section">
                 <div class="section-header">
                     <h2><i class="fas fa-cog"></i> Painel de Administração</h2>
-                    <p class="section-subtitle">Gerencie usuários e configurações do sistema</p>
+                    <p class="section-subtitle">Gerencie usuários, pontuações e configurações do sistema</p>
                 </div>
                 
                 <div class="admin-container">
@@ -270,9 +482,15 @@
                                     <option value="normal">Normal</option>
                                     <option value="hard">Difícil</option>
                                 </select>
+                                <select id="admin-score-theme" class="filter-select">
+                                    <option value="all">Todos os Temas</option>
+                                    <option value="numbers">Números</option>
+                                    <option value="words">Palavras</option>
+                                    <option value="animals">Animais</option>
+                                </select>
                                 <input type="date" id="admin-score-date" class="filter-select">
                                 <button id="clear-scores-btn" class="btn btn-danger">
-                                    <i class="fas fa-trash"></i> Limrar Pontuações Antigas
+                                    <i class="fas fa-trash"></i> Limpar Pontuações Antigas
                                 </button>
                             </div>
                             
@@ -332,158 +550,6 @@
                     </div>
                 </div>
             </section>
-
-            <!-- Seção de Login/Cadastro (Modal) -->
-            <div id="auth-modal" class="modal">
-                <div class="modal-content auth-modal-content">
-                    <div class="modal-header">
-                        <h2 id="auth-modal-title">Entrar na Conta</h2>
-                        <span class="close-modal">&times;</span>
-                    </div>
-                    
-                    <div class="auth-tabs">
-                        <button id="tab-login" class="auth-tab active">Login</button>
-                        <button id="tab-register" class="auth-tab">Cadastro</button>
-                        <button id="tab-reset" class="auth-tab">Recuperar Senha</button>
-                    </div>
-                    
-                    <div class="auth-content">
-                        <!-- Formulário de Login -->
-                        <form id="login-form" class="auth-form active">
-                            <div class="form-group">
-                                <label for="login-email">Email</label>
-                                <input type="email" id="login-email" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="login-password">Senha</label>
-                                <input type="password" id="login-password" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <button type="submit" class="btn btn-primary btn-block">
-                                    <i class="fas fa-sign-in-alt"></i> Entrar
-                                </button>
-                            </div>
-                            
-                            <div id="login-message" class="form-message"></div>
-                        </form>
-                        
-                        <!-- Formulário de Cadastro -->
-                        <form id="register-form" class="auth-form">
-                            <div class="form-group">
-                                <label for="register-name">Nome Completo *</label>
-                                <input type="text" id="register-name" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="register-email">Email *</label>
-                                <input type="email" id="register-email" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="register-password">Senha *</label>
-                                <input type="password" id="register-password" required minlength="6">
-                                <small class="form-hint">Mínimo de 6 caracteres</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="register-confirm-password">Confirmar Senha *</label>
-                                <input type="password" id="register-confirm-password" required>
-                            </div>
-                            
-                            <div class="form-group checkbox-group" id="admin-register-container">
-                                <input type="checkbox" id="register-admin">
-                                <label for="register-admin">Cadastrar como Administrador</label>
-                                <small class="form-hint">Apenas disponível para o primeiro administrador do sistema</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <button type="submit" class="btn btn-primary btn-block">
-                                    <i class="fas fa-user-plus"></i> Criar Conta
-                                </button>
-                            </div>
-                            
-                            <div id="register-message" class="form-message"></div>
-                        </form>
-                        
-                        <!-- Formulário de Recuperação de Senha -->
-                        <form id="reset-form" class="auth-form">
-                            <div class="form-group">
-                                <label for="reset-email">Email</label>
-                                <input type="email" id="reset-email" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <button type="submit" class="btn btn-primary btn-block">
-                                    <i class="fas fa-envelope"></i> Enviar Link de Recuperação
-                                </button>
-                            </div>
-                            
-                            <div id="reset-message" class="form-message"></div>
-                            
-                            <div class="form-info">
-                                <p>Um link para redefinir sua senha será enviado para o email fornecido.</p>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal de Edição de Usuário -->
-            <div id="edit-user-modal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-user-edit"></i> Editar Usuário</h2>
-                        <span class="close-modal">&times;</span>
-                    </div>
-                    <div class="modal-body">
-                        <form id="edit-user-form">
-                            <input type="hidden" id="edit-user-id">
-                            
-                            <div class="form-group">
-                                <label for="edit-user-name">Nome Completo *</label>
-                                <input type="text" id="edit-user-name" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="edit-user-email">Email *</label>
-                                <input type="email" id="edit-user-email" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="edit-user-role">Tipo de Usuário *</label>
-                                <select id="edit-user-role" required>
-                                    <option value="player">Jogador</option>
-                                    <option value="admin">Administrador</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="edit-user-password">Nova Senha (deixe em branco para não alterar)</label>
-                                <input type="password" id="edit-user-password">
-                                <small class="form-hint">Mínimo de 6 caracteres</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="edit-user-status">Status da Conta</label>
-                                <select id="edit-user-status">
-                                    <option value="active">Ativa</option>
-                                    <option value="suspended">Suspensa</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <button type="submit" class="btn btn-primary btn-block">
-                                    <i class="fas fa-save"></i> Salvar Alterações
-                                </button>
-                            </div>
-                            
-                            <div id="edit-user-message" class="form-message"></div>
-                        </form>
-                    </div>
-                </div>
-            </div>
         </main>
 
         <footer class="footer">
@@ -492,6 +558,220 @@
                 <i class="fas fa-database"></i> Firebase: <span id="db-status">Conectando...</span>
             </p>
         </footer>
+    </div>
+
+    <!-- Modal de Login/Cadastro -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content auth-modal-content">
+            <div class="modal-header">
+                <h2 id="auth-modal-title">Entrar na Conta</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <div class="auth-tabs">
+                <button id="tab-login" class="auth-tab active">Login</button>
+                <button id="tab-register" class="auth-tab">Cadastro</button>
+                <button id="tab-reset" class="auth-tab">Recuperar Senha</button>
+            </div>
+            
+            <div class="auth-content">
+                <!-- Formulário de Login -->
+                <form id="login-form" class="auth-form active">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="login-password">Senha</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-sign-in-alt"></i> Entrar
+                        </button>
+                    </div>
+                    
+                    <div id="login-message" class="form-message"></div>
+                </form>
+                
+                <!-- Formulário de Cadastro -->
+                <form id="register-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="register-name">Nome Completo *</label>
+                        <input type="text" id="register-name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="register-email">Email *</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="register-password">Senha *</label>
+                        <input type="password" id="register-password" required minlength="6">
+                        <small class="form-hint">Mínimo de 6 caracteres</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="register-confirm-password">Confirmar Senha *</label>
+                        <input type="password" id="register-confirm-password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-user-plus"></i> Criar Conta
+                        </button>
+                    </div>
+                    
+                    <div id="register-message" class="form-message"></div>
+                </form>
+                
+                <!-- Formulário de Recuperação de Senha -->
+                <form id="reset-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="reset-email">Email</label>
+                        <input type="email" id="reset-email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-envelope"></i> Enviar Link de Recuperação
+                        </button>
+                    </div>
+                    
+                    <div id="reset-message" class="form-message"></div>
+                    
+                    <div class="form-info">
+                        <p>Um link para redefinir sua senha será enviado para o email fornecido.</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edição de Usuário -->
+    <div id="edit-user-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-edit"></i> Editar Usuário</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="edit-user-form">
+                    <input type="hidden" id="edit-user-id">
+                    
+                    <div class="form-group">
+                        <label for="edit-user-name">Nome Completo *</label>
+                        <input type="text" id="edit-user-name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-user-email">Email *</label>
+                        <input type="email" id="edit-user-email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-user-role">Tipo de Usuário *</label>
+                        <select id="edit-user-role" required>
+                            <option value="player">Jogador</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-user-password">Nova Senha (deixe em branco para não alterar)</label>
+                        <input type="password" id="edit-user-password">
+                        <small class="form-hint">Mínimo de 6 caracteres</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-user-status">Status da Conta</label>
+                        <select id="edit-user-status">
+                            <option value="active">Ativa</option>
+                            <option value="suspended">Suspensa</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-save"></i> Salvar Alterações
+                        </button>
+                    </div>
+                    
+                    <div id="edit-user-message" class="form-message"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Instruções -->
+    <div id="instructions-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-question-circle"></i> Como Jogar</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="instructions-content">
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Objetivo do Jogo</h3>
+                            <p>Organize as peças na ordem correta. No tema números, organize de 1 a 15 da esquerda para a direita e de cima para baixo, com o espaço vazio no canto inferior direito.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Como Mover as Peças</h3>
+                            <p>Clique e arraste uma peça adjacente ao espaço vazio para movê-la. Você só pode mover peças que estão ao lado do espaço vazio.</p>
+                            <div class="instruction-demo">
+                                <div class="demo-piece">1</div>
+                                <div class="demo-piece">2</div>
+                                <div class="demo-piece">3</div>
+                                <div class="demo-piece empty">Vazio</div>
+                                <div class="demo-arrow">→</div>
+                                <div class="demo-piece">1</div>
+                                <div class="demo-piece">2</div>
+                                <div class="demo-piece empty">Vazio</div>
+                                <div class="demo-piece">3</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Dicas para Vencer</h3>
+                            <ul>
+                                <li>Comece organizando a primeira linha (1-2-3-4)</li>
+                                <li>Depois organize a primeira coluna (1-5-9-13)</li>
+                                <li>Continue linha por linha até completar o puzzle</li>
+                                <li>Use o botão "Dica" se estiver com dificuldade</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Sistema de Pontuação</h3>
+                            <p>Sua pontuação é baseada no número de movimentos e no tempo gasto. Quanto menos movimentos e menos tempo, melhor sua colocação no ranking.</p>
+                            <p>Se estiver logado, suas pontuações são salvas automaticamente.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button id="start-playing-btn" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Começar a Jogar
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
