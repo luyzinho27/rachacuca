@@ -1817,4 +1817,5 @@ async function handleAdminRegister(e) {
         console.error("Erro ao criar conta de usuário:", error);
         showFormMessage(messageElement, 'Erro ao criar conta de usuário. Tente novamente.', 'error');
     }
+
 }
