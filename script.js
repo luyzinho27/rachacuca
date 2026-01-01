@@ -13,15 +13,20 @@ const firebaseConfig = {
 let app, auth, db;
 let currentUser = null;
 let adminUserExists = false;
+let isGuest = false;
 
 // Elementos do DOM
+let welcomeScreen, mainApp;
 let puzzleBoard, moveCounter, timerElement, shuffleBtn, solveBtn, resetBtn, hintBtn;
-let playAgainBtn, saveScoreBtn, completionMessage, finalMoves, finalTime;
+let playAgainBtn, completionMessage, finalMoves, finalTime;
 let difficultyBtns, authModal, loginBtn, registerBtn, logoutBtn, userInfo, userName;
-let adminNavItem, gameSection, rankingSection, profileSection, adminSection;
+let adminNavItem, homeSection, gameSection, rankingSection, themesSection, adminSection;
 let rankingList, userScoresList, usersList, adminScoresList;
 let loginForm, registerForm, resetForm, adminRegisterForm, editUserForm;
-let authButtons, userInfoContainer, dbStatus, saveScoreContainer;
+let authButtons, userInfoContainer, dbStatus;
+let playGuestBtn, welcomeLoginBtn, welcomeRegisterBtn, quickPlayBtn;
+let heroPlayBtn, heroHowtoBtn, changeThemeBtn, themeCards;
+let instructionsModal, startPlayingBtn;
 
 // Variáveis do jogo
 let board = [];
@@ -33,6 +38,53 @@ let gameStarted = false;
 let gameCompleted = false;
 let currentDifficulty = 'normal';
 let gameActive = false;
+let currentTheme = 'numbers';
+
+// Temas disponíveis
+const themes = {
+    numbers: {
+        name: "Números",
+        items: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', null],
+        className: 'number',
+        solutionText: "1 2 3 4\n5 6 7 8\n9 10 11 12\n13 14 15"
+    },
+    words: {
+        name: "Palavras",
+        items: ['R', 'A', 'C', 'H', 'A', 'C', 'U', 'C', 'A', 'M', 'A', 'T', 'O', 'A', 'T', null],
+        className: 'word',
+        solutionText: "R A C H A\nC U C A  \nM A T O\nA T A R"
+    },
+    animals: {
+        name: "Animais",
+        items: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', null],
+        className: 'emoji',
+        solutionText: "🐶 🐱 🐭 🐹\n🐰 🦊 🐻 🐼\n🐨 🦁 🐮 🐷\n🐸 🐵 🐔"
+    },
+    fruits: {
+        name: "Frutas",
+        items: ['🍎', '🍌', '🍇', '🍓', '🍉', '🍊', '🍑', '🍍', '🥭', '🍒', '🥝', '🍏', '🥥', '🍈', '🫐', null],
+        className: 'emoji',
+        solutionText: "🍎 🍌 🍇 🍓\n🍉 🍊 🍑 🍍\n🥭 🍒 🥝 🍏\n🥥 🍈 🫐"
+    },
+    flags: {
+        name: "Bandeiras",
+        items: ['🇧🇷', '🇺🇸', '🇨🇳', '🇯🇵', '🇩🇪', '🇫🇷', '🇮🇹', '🇪🇸', '🇬🇧', '🇨🇦', '🇦🇺', '🇰🇷', '🇦🇷', '🇲🇽', '🇵🇹', null],
+        className: 'emoji',
+        solutionText: "🇧🇷 🇺🇸 🇨🇳 🇯🇵\n🇩🇪 🇫🇷 🇮🇹 🇪🇸\n🇬🇧 🇨🇦 🇦🇺 🇰🇷\n🇦🇷 🇲🇽 🇵🇹"
+    },
+    emoji: {
+        name: "Emojis",
+        items: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '😍', '😘', '😋', '😜', '🤪', null],
+        className: 'emoji',
+        solutionText: "😀 😃 😄 😁\n😆 😅 😂 🤣\n😊 😇 😍 😘\n😋 😜 🤪"
+    }
+};
+
+// Variáveis para drag and drop
+let draggedTile = null;
+let dragStartX = 0;
+let dragStartY = 0;
+let isDragging = false;
 
 // Inicialização do aplicativo
 document.addEventListener('DOMContentLoaded', function() {
@@ -41,6 +93,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeGame();
     setupEventListeners();
     checkAuthState();
+    initializePreviewBoard();
+    loadGlobalStats();
 });
 
 // Inicializar Firebase
@@ -78,30 +132,21 @@ async function checkAdminExists() {
         
         adminUserExists = !snapshot.empty;
         console.log("Admin existe:", adminUserExists);
-        
-        // Atualizar a interface baseado na existência de administrador
-        updateAdminRegisterOption();
     } catch (error) {
         console.error("Erro ao verificar administrador:", error);
     }
 }
 
-// Atualizar opção de cadastro como administrador
-function updateAdminRegisterOption() {
-    const adminCheckbox = document.getElementById('register-admin');
-    const adminContainer = document.getElementById('admin-register-container');
-    
-    if (adminCheckbox && adminContainer) {
-        if (adminUserExists) {
-            adminContainer.style.display = 'none';
-        } else {
-            adminContainer.style.display = 'block';
-        }
-    }
-}
-
 // Inicializar elementos do DOM
 function initializeDOMElements() {
+    // Elementos da tela de boas-vindas
+    welcomeScreen = document.getElementById('welcome-screen');
+    mainApp = document.getElementById('main-app');
+    playGuestBtn = document.getElementById('play-guest-btn');
+    welcomeLoginBtn = document.getElementById('welcome-login-btn');
+    welcomeRegisterBtn = document.getElementById('welcome-register-btn');
+    quickPlayBtn = document.getElementById('quick-play-btn');
+    
     // Elementos do jogo
     puzzleBoard = document.getElementById('puzzle-board');
     moveCounter = document.getElementById('move-counter');
@@ -111,22 +156,25 @@ function initializeDOMElements() {
     resetBtn = document.getElementById('reset-btn');
     hintBtn = document.getElementById('hint-btn');
     playAgainBtn = document.getElementById('play-again-btn');
-    saveScoreBtn = document.getElementById('save-score-btn');
+    changeThemeBtn = document.getElementById('change-theme-btn');
     completionMessage = document.getElementById('completion-message');
     finalMoves = document.getElementById('final-moves');
     finalTime = document.getElementById('final-time');
     difficultyBtns = document.querySelectorAll('.difficulty-btn');
+    themeCards = document.querySelectorAll('.theme-card');
     
     // Seções da página
+    homeSection = document.getElementById('home-section');
     gameSection = document.getElementById('game-section');
     rankingSection = document.getElementById('ranking-section');
-    profileSection = document.getElementById('profile-section');
+    themesSection = document.getElementById('themes-section');
     adminSection = document.getElementById('admin-section');
     
     // Navegação
     const navHome = document.getElementById('nav-home');
+    const navGame = document.getElementById('nav-game');
     const navRanking = document.getElementById('nav-ranking');
-    const navProfile = document.getElementById('nav-profile');
+    const navThemes = document.getElementById('nav-themes');
     const navAdmin = document.getElementById('nav-admin');
     adminNavItem = document.getElementById('admin-nav-item');
     
@@ -145,13 +193,9 @@ function initializeDOMElements() {
     registerForm = document.getElementById('register-form');
     resetForm = document.getElementById('reset-form');
     adminRegisterForm = document.getElementById('admin-register-form');
-    editUserForm = document.getElementById('edit-user-modal');
     
     // Elementos do ranking
     rankingList = document.getElementById('ranking-list');
-    
-    // Elementos do perfil
-    userScoresList = document.getElementById('user-scores-list');
     
     // Elementos de administração
     usersList = document.getElementById('users-list');
@@ -160,8 +204,13 @@ function initializeDOMElements() {
     // Status do banco de dados
     dbStatus = document.getElementById('db-status');
     
-    // Container para salvar pontuação
-    saveScoreContainer = document.getElementById('save-score-container');
+    // Botões da página inicial
+    heroPlayBtn = document.getElementById('hero-play-btn');
+    heroHowtoBtn = document.getElementById('hero-howto-btn');
+    
+    // Modal de instruções
+    instructionsModal = document.getElementById('instructions-modal');
+    startPlayingBtn = document.getElementById('start-playing-btn');
 }
 
 // Inicializar o jogo
@@ -175,20 +224,16 @@ function initializeGame() {
 
 // Criar o tabuleiro
 function createBoard() {
-    board = [];
-    for (let i = 1; i <= 15; i++) {
-        board.push(i);
-    }
-    board.push(null); // Espaço vazio
+    board = [...themes[currentTheme].items];
 }
 
-// Renderizar o tabuleiro
+// Renderizar o tabuleiro com suporte a drag and drop
 function renderBoard() {
     puzzleBoard.innerHTML = '';
     
     board.forEach((value, index) => {
         const tile = document.createElement('div');
-        tile.className = 'puzzle-tile';
+        tile.className = `puzzle-tile ${themes[currentTheme].className}`;
         
         if (value === null) {
             tile.classList.add('empty');
@@ -200,29 +245,135 @@ function renderBoard() {
             tile.dataset.value = value;
             
             // Verificar se a peça está na posição correta
-            if (value === index + 1) {
+            if (value === themes[currentTheme].items[index]) {
                 tile.classList.add('correct-position');
             }
             
-            // Verificar se a peça pode ser movida
-            if (isMovable(index)) {
-                tile.classList.add('movable');
-                tile.addEventListener('click', () => moveTile(index));
-                
-                // Adicionar suporte a arrastar (opcional)
-                tile.setAttribute('draggable', 'true');
-                tile.addEventListener('dragstart', handleDragStart);
-                tile.addEventListener('dragover', handleDragOver);
-                tile.addEventListener('drop', handleDrop);
-                tile.addEventListener('dragend', handleDragEnd);
-            } else {
-                tile.style.cursor = 'default';
-                tile.removeAttribute('draggable');
-            }
+            // Adicionar eventos de drag and drop
+            tile.addEventListener('mousedown', startDrag);
+            tile.addEventListener('touchstart', startDragTouch);
+            
+            // Adicionar evento de clique como fallback
+            tile.addEventListener('click', () => {
+                if (!isDragging) {
+                    moveTile(index);
+                }
+            });
         }
         
         puzzleBoard.appendChild(tile);
     });
+    
+    // Adicionar eventos de mouse/touch move e end ao documento
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchmove', dragTouch, { passive: false });
+    document.addEventListener('touchend', endDragTouch);
+}
+
+// Iniciar arrastar (mouse)
+function startDrag(e) {
+    if (gameCompleted) return;
+    
+    const tile = e.target;
+    const index = parseInt(tile.dataset.index);
+    
+    if (isMovable(index)) {
+        draggedTile = tile;
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        
+        tile.classList.add('dragging');
+        tile.style.zIndex = '100';
+        
+        // Prevenir seleção de texto durante o arraste
+        e.preventDefault();
+    }
+}
+
+// Iniciar arrastar (touch)
+function startDragTouch(e) {
+    if (gameCompleted) return;
+    
+    const tile = e.target;
+    const index = parseInt(tile.dataset.index);
+    
+    if (isMovable(index) && e.touches.length === 1) {
+        draggedTile = tile;
+        isDragging = true;
+        dragStartX = e.touches[0].clientX;
+        dragStartY = e.touches[0].clientY;
+        
+        tile.classList.add('dragging');
+        tile.style.zIndex = '100';
+        
+        // Prevenir scroll durante o arraste
+        e.preventDefault();
+    }
+}
+
+// Arrastar (mouse)
+function drag(e) {
+    if (!draggedTile || !isDragging) return;
+    
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Aplicar transformação visual
+    draggedTile.style.transform = `translate(${dx}px, ${dy}px)`;
+    
+    // Se arrastou suficientemente longe, mover a peça
+    if (distance > 40) {
+        const index = parseInt(draggedTile.dataset.index);
+        moveTile(index);
+        endDrag();
+    }
+}
+
+// Arrastar (touch)
+function dragTouch(e) {
+    if (!draggedTile || !isDragging || e.touches.length !== 1) return;
+    
+    const dx = e.touches[0].clientX - dragStartX;
+    const dy = e.touches[0].clientY - dragStartY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Aplicar transformação visual
+    draggedTile.style.transform = `translate(${dx}px, ${dy}px)`;
+    
+    // Se arrastou suficientemente longe, mover a peça
+    if (distance > 40) {
+        const index = parseInt(draggedTile.dataset.index);
+        moveTile(index);
+        endDragTouch();
+    }
+    
+    // Prevenir scroll
+    e.preventDefault();
+}
+
+// Finalizar arrastar (mouse)
+function endDrag() {
+    if (draggedTile) {
+        draggedTile.classList.remove('dragging');
+        draggedTile.style.transform = '';
+        draggedTile.style.zIndex = '';
+        draggedTile = null;
+    }
+    isDragging = false;
+}
+
+// Finalizar arrastar (touch)
+function endDragTouch() {
+    if (draggedTile) {
+        draggedTile.classList.remove('dragging');
+        draggedTile.style.transform = '';
+        draggedTile.style.zIndex = '';
+        draggedTile = null;
+    }
+    isDragging = false;
 }
 
 // Verificar se uma peça pode ser movida
@@ -267,38 +418,6 @@ function moveTile(index) {
     }
 }
 
-// Funções de arrastar e soltar (drag and drop)
-let draggedTile = null;
-
-function handleDragStart(e) {
-    if (!isMovable(parseInt(e.target.dataset.index))) {
-        e.preventDefault();
-        return;
-    }
-    draggedTile = e.target;
-    e.dataTransfer.setData('text/plain', e.target.dataset.index);
-    setTimeout(() => {
-        e.target.style.opacity = '0.7';
-    }, 0);
-}
-
-function handleDragOver(e) {
-    e.preventDefault();
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    if (e.target.classList.contains('empty')) {
-        const tileIndex = parseInt(draggedTile.dataset.index);
-        moveTile(tileIndex);
-    }
-}
-
-function handleDragEnd(e) {
-    e.target.style.opacity = '1';
-    draggedTile = null;
-}
-
 // Embaralhar o tabuleiro
 function shuffleBoard() {
     if (gameCompleted) {
@@ -320,11 +439,6 @@ function shuffleBoard() {
     updateMoveCounter();
     resetTimer();
     completionMessage.style.display = 'none';
-    
-    // Esconder botão de salvar pontuação
-    if (saveScoreContainer) {
-        saveScoreContainer.style.display = 'none';
-    }
     
     // Embaralhar o tabuleiro
     let shuffleCount;
@@ -369,14 +483,7 @@ function shuffleBoard() {
 // Mostrar a solução
 function showSolution() {
     // Criar tabuleiro ordenado
-    const solvedBoard = [];
-    for (let i = 1; i <= 15; i++) {
-        solvedBoard.push(i);
-    }
-    solvedBoard.push(null);
-    
-    // Atualizar o tabuleiro atual
-    board = [...solvedBoard];
+    board = [...themes[currentTheme].items];
     emptyTileIndex = 15;
     renderBoard();
     
@@ -402,11 +509,6 @@ function resetGame() {
     resetTimer();
     completionMessage.style.display = 'none';
     
-    // Esconder botão de salvar pontuação
-    if (saveScoreContainer) {
-        saveScoreContainer.style.display = 'none';
-    }
-    
     // Criar tabuleiro ordenado
     createBoard();
     renderBoard();
@@ -416,7 +518,7 @@ function resetGame() {
 function showHint() {
     // Encontrar a primeira peça fora do lugar que pode ser movida
     for (let i = 0; i < board.length; i++) {
-        if (board[i] !== null && board[i] !== i + 1 && isMovable(i)) {
+        if (board[i] !== null && board[i] !== themes[currentTheme].items[i] && isMovable(i)) {
             const tile = document.querySelector(`.puzzle-tile[data-index="${i}"]`);
             tile.style.boxShadow = '0 0 15px 5px gold';
             tile.style.transform = 'scale(1.05)';
@@ -437,7 +539,7 @@ function showHint() {
 // Verificar vitória
 function checkWin() {
     for (let i = 0; i < 15; i++) {
-        if (board[i] !== i + 1) {
+        if (board[i] !== themes[currentTheme].items[i]) {
             return false;
         }
     }
@@ -460,13 +562,38 @@ function completeGame() {
     finalTime.textContent = formatTime(timer);
     completionMessage.style.display = 'block';
     
-    // Mostrar botão para salvar pontuação se o usuário estiver logado
-    if (currentUser && saveScoreContainer) {
-        saveScoreContainer.style.display = 'block';
+    // Salvar pontuação automaticamente se o usuário estiver logado
+    if (currentUser && !isGuest) {
+        saveScoreAutomatically();
     }
     
     // Rolar para a mensagem
     completionMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Salvar pontuação automaticamente
+async function saveScoreAutomatically() {
+    try {
+        // Criar objeto de pontuação
+        const scoreData = {
+            userId: currentUser.uid,
+            userName: currentUser.displayName || currentUser.email.split('@')[0],
+            userEmail: currentUser.email,
+            moves: moves,
+            time: timer,
+            difficulty: currentDifficulty,
+            theme: currentTheme,
+            date: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        // Salvar no Firestore
+        await db.collection('scores').add(scoreData);
+        
+        console.log("Pontuação salva automaticamente");
+        
+    } catch (error) {
+        console.error("Erro ao salvar pontuação automaticamente:", error);
+    }
 }
 
 // Atualizar contador de movimentos
@@ -507,29 +634,65 @@ function createSolutionBoard() {
     
     solutionBoard.innerHTML = '';
     
+    // Usar o tema atual para a solução
+    const currentThemeData = themes[currentTheme];
+    const solutionText = currentThemeData.solutionText;
+    
+    // Dividir o texto da solução em linhas
+    const lines = solutionText.split('\n');
+    
+    lines.forEach(line => {
+        const lineDiv = document.createElement('div');
+        lineDiv.style.gridColumn = '1 / -1';
+        lineDiv.style.display = 'flex';
+        lineDiv.style.justifyContent = 'center';
+        lineDiv.style.alignItems = 'center';
+        lineDiv.style.fontSize = currentTheme === 'numbers' ? '1.2rem' : '1.5rem';
+        lineDiv.style.fontWeight = '700';
+        lineDiv.style.color = 'var(--primary-color)';
+        lineDiv.textContent = line;
+        solutionBoard.appendChild(lineDiv);
+    });
+}
+
+// Inicializar preview board na página inicial
+function initializePreviewBoard() {
+    const previewBoard = document.querySelector('.preview-board');
+    if (!previewBoard) return;
+    
+    previewBoard.innerHTML = '';
+    
+    // Criar peças do preview
     for (let i = 1; i <= 16; i++) {
-        const tile = document.createElement('div');
-        tile.className = 'solution-tile';
+        const piece = document.createElement('div');
+        piece.className = 'preview-piece';
         
         if (i <= 15) {
-            tile.textContent = i;
+            piece.textContent = i;
+            piece.style.animationDelay = `${(i-1)*0.1}s`;
         } else {
-            tile.classList.add('empty');
+            piece.style.visibility = 'hidden';
         }
         
-        solutionBoard.appendChild(tile);
+        previewBoard.appendChild(piece);
     }
 }
 
 // Configurar event listeners
 function setupEventListeners() {
+    // Event listeners da tela de boas-vindas
+    if (playGuestBtn) playGuestBtn.addEventListener('click', playAsGuest);
+    if (welcomeLoginBtn) welcomeLoginBtn.addEventListener('click', showLoginModal);
+    if (welcomeRegisterBtn) welcomeRegisterBtn.addEventListener('click', showRegisterModal);
+    if (quickPlayBtn) quickPlayBtn.addEventListener('click', quickPlay);
+    
     // Event listeners do jogo
     if (shuffleBtn) shuffleBtn.addEventListener('click', shuffleBoard);
     if (solveBtn) solveBtn.addEventListener('click', showSolution);
     if (resetBtn) resetBtn.addEventListener('click', resetGame);
     if (hintBtn) hintBtn.addEventListener('click', showHint);
     if (playAgainBtn) playAgainBtn.addEventListener('click', resetGame);
-    if (saveScoreBtn) saveScoreBtn.addEventListener('click', saveScore);
+    if (changeThemeBtn) changeThemeBtn.addEventListener('click', () => showSection('themes-section'));
     
     // Dificuldade
     if (difficultyBtns) {
@@ -549,21 +712,33 @@ function setupEventListeners() {
         });
     }
     
+    // Temas
+    if (themeCards) {
+        themeCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const theme = this.dataset.theme;
+                changeTheme(theme);
+            });
+        });
+    }
+    
     // Navegação
     const navHome = document.getElementById('nav-home');
+    const navGame = document.getElementById('nav-game');
     const navRanking = document.getElementById('nav-ranking');
-    const navProfile = document.getElementById('nav-profile');
+    const navThemes = document.getElementById('nav-themes');
     const navAdmin = document.getElementById('nav-admin');
     
-    if (navHome) navHome.addEventListener('click', () => showSection('game-section'));
+    if (navHome) navHome.addEventListener('click', () => showSection('home-section'));
+    if (navGame) navGame.addEventListener('click', () => {
+        showSection('game-section');
+        resetGame();
+    });
     if (navRanking) navRanking.addEventListener('click', () => {
         showSection('ranking-section');
         loadRanking();
     });
-    if (navProfile) navProfile.addEventListener('click', () => {
-        showSection('profile-section');
-        loadUserProfile();
-    });
+    if (navThemes) navThemes.addEventListener('click', () => showSection('themes-section'));
     if (navAdmin) navAdmin.addEventListener('click', () => {
         showSection('admin-section');
         loadAdminUsers();
@@ -617,27 +792,66 @@ function setupEventListeners() {
     if (registerForm) registerForm.addEventListener('submit', handleRegister);
     if (resetForm) resetForm.addEventListener('submit', handlePasswordReset);
     if (adminRegisterForm) adminRegisterForm.addEventListener('submit', handleAdminRegister);
-    if (editUserForm) editUserForm.addEventListener('submit', handleEditUser);
+    
+    // Botões da página inicial
+    if (heroPlayBtn) heroPlayBtn.addEventListener('click', () => {
+        showSection('game-section');
+        resetGame();
+    });
+    
+    if (heroHowtoBtn) heroHowtoBtn.addEventListener('click', showInstructionsModal);
+    if (startPlayingBtn) startPlayingBtn.addEventListener('click', () => {
+        instructionsModal.style.display = 'none';
+        showSection('game-section');
+        resetGame();
+    });
     
     // Filtros de ranking
     const rankingDifficulty = document.getElementById('ranking-difficulty');
     const rankingPeriod = document.getElementById('ranking-period');
+    const rankingTheme = document.getElementById('ranking-theme');
     
     if (rankingDifficulty) rankingDifficulty.addEventListener('change', loadRanking);
     if (rankingPeriod) rankingPeriod.addEventListener('change', loadRanking);
+    if (rankingTheme) rankingTheme.addEventListener('change', loadRanking);
     
     // Filtros de administração
     const adminScoreDifficulty = document.getElementById('admin-score-difficulty');
+    const adminScoreTheme = document.getElementById('admin-score-theme');
     const adminScoreDate = document.getElementById('admin-score-date');
     const userSearch = document.getElementById('user-search');
     const clearScoresBtn = document.getElementById('clear-scores-btn');
     
     if (adminScoreDifficulty) adminScoreDifficulty.addEventListener('change', loadAdminScores);
+    if (adminScoreTheme) adminScoreTheme.addEventListener('change', loadAdminScores);
     if (adminScoreDate) adminScoreDate.addEventListener('change', loadAdminScores);
     if (userSearch) userSearch.addEventListener('input', loadAdminUsers);
     if (clearScoresBtn) clearScoresBtn.addEventListener('click', clearOldScores);
     
     // Embaralhar o tabuleiro inicialmente
+    shuffleBoard();
+}
+
+// Jogar como visitante
+function playAsGuest() {
+    isGuest = true;
+    currentUser = null;
+    welcomeScreen.classList.remove('active');
+    welcomeScreen.classList.add('hidden');
+    mainApp.classList.add('active');
+    updateUIForLoggedOutUser();
+    showSection('game-section');
+}
+
+// Jogar rapidamente
+function quickPlay() {
+    isGuest = true;
+    currentUser = null;
+    welcomeScreen.classList.remove('active');
+    welcomeScreen.classList.add('hidden');
+    mainApp.classList.add('active');
+    updateUIForLoggedOutUser();
+    showSection('game-section');
     shuffleBoard();
 }
 
@@ -662,13 +876,16 @@ function showSection(sectionId) {
     }
     
     // Ativar link de navegação correspondente
-    const targetNavLink = document.querySelector(`[href="#"]`);
-    if (sectionId === 'game-section') {
+    if (sectionId === 'home-section') {
         document.getElementById('nav-home').classList.add('active');
+    } else if (sectionId === 'game-section') {
+        document.getElementById('nav-game').classList.add('active');
+        // Atualizar o nome do tema atual
+        document.getElementById('current-theme').textContent = themes[currentTheme].name;
     } else if (sectionId === 'ranking-section') {
         document.getElementById('nav-ranking').classList.add('active');
-    } else if (sectionId === 'profile-section') {
-        document.getElementById('nav-profile').classList.add('active');
+    } else if (sectionId === 'themes-section') {
+        document.getElementById('nav-themes').classList.add('active');
     } else if (sectionId === 'admin-section') {
         document.getElementById('nav-admin').classList.add('active');
     }
@@ -728,15 +945,21 @@ function showRegisterModal() {
     switchAuthTab('register');
 }
 
+// Mostrar modal de instruções
+function showInstructionsModal() {
+    instructionsModal.style.display = 'flex';
+}
+
 // Verificar estado de autenticação
 function checkAuthState() {
     if (!auth) return;
     
     auth.onAuthStateChanged(async (user) => {
-        currentUser = user;
-        
-        if (user) {
-            // Usuário está logado
+        if (user && !isGuest) {
+            // Usuário está logado (não é visitante)
+            currentUser = user;
+            isGuest = false;
+            
             console.log("Usuário logado:", user.email);
             
             // Atualizar interface para usuário logado
@@ -748,9 +971,9 @@ function checkAuthState() {
             
             // Carregar dados do usuário
             await loadUserData(user.uid);
-        } else {
-            // Usuário não está logado
-            console.log("Usuário não logado");
+        } else if (!isGuest) {
+            // Usuário não está logado e não é visitante
+            currentUser = null;
             
             // Atualizar interface para usuário não logado
             updateUIForLoggedOutUser();
@@ -769,15 +992,6 @@ function updateUIForLoggedInUser(user) {
         const displayName = user.displayName || user.email.split('@')[0];
         userName.textContent = displayName;
     }
-    
-    // Mostrar link para perfil
-    const navProfile = document.getElementById('nav-profile');
-    if (navProfile) navProfile.style.display = 'flex';
-    
-    // Mostrar botão de salvar pontuação se o jogo estiver ativo
-    if (saveScoreContainer && gameActive) {
-        saveScoreContainer.style.display = 'block';
-    }
 }
 
 // Atualizar UI para usuário não logado
@@ -786,15 +1000,8 @@ function updateUIForLoggedOutUser() {
     if (userInfoContainer) userInfoContainer.style.display = 'none';
     if (authButtons) authButtons.style.display = 'flex';
     
-    // Esconder link para perfil
-    const navProfile = document.getElementById('nav-profile');
-    if (navProfile) navProfile.style.display = 'none';
-    
     // Esconder link para admin
     if (adminNavItem) adminNavItem.style.display = 'none';
-    
-    // Esconder botão de salvar pontuação
-    if (saveScoreContainer) saveScoreContainer.style.display = 'none';
 }
 
 // Verificar se o usuário é administrador
@@ -825,10 +1032,6 @@ async function loadUserData(uid) {
         const userDoc = await db.collection('users').doc(uid).get();
         if (userDoc.exists) {
             const userData = userDoc.data();
-            
-            // Atualizar informações no perfil se necessário
-            updateProfileInfo(userData);
-            
             return userData;
         } else {
             // Criar documento do usuário se não existir
@@ -861,33 +1064,6 @@ async function createUserDocument(uid) {
         return userData;
     } catch (error) {
         console.error("Erro ao criar documento do usuário:", error);
-    }
-}
-
-// Atualizar informações do perfil
-function updateProfileInfo(userData) {
-    // Atualizar elementos do perfil se estiverem visíveis
-    const profileName = document.getElementById('profile-name');
-    const profileEmail = document.getElementById('profile-email');
-    const profileRole = document.getElementById('profile-role');
-    const profileJoined = document.getElementById('profile-joined');
-    
-    if (profileName && userData.name) {
-        profileName.textContent = userData.name;
-    }
-    
-    if (profileEmail && userData.email) {
-        profileEmail.textContent = userData.email;
-    }
-    
-    if (profileRole) {
-        profileRole.textContent = userData.role === 'admin' ? 'Administrador' : 'Jogador';
-    }
-    
-    if (profileJoined && userData.createdAt) {
-        // Converter timestamp do Firestore para data
-        const date = userData.createdAt.toDate ? userData.createdAt.toDate() : new Date();
-        profileJoined.textContent = `Membro desde: ${date.toLocaleDateString('pt-BR')}`;
     }
 }
 
@@ -926,6 +1102,17 @@ async function handleLogin(e) {
             
             // Limpar formulário
             loginForm.reset();
+            
+            // Se estava na tela de boas-vindas, ir para o jogo
+            if (welcomeScreen.classList.contains('active')) {
+                welcomeScreen.classList.remove('active');
+                welcomeScreen.classList.add('hidden');
+                mainApp.classList.add('active');
+                showSection('game-section');
+            }
+            
+            // Não é mais visitante
+            isGuest = false;
         }, 1500);
         
     } catch (error) {
@@ -961,7 +1148,6 @@ async function handleRegister(e) {
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
     const confirmPassword = document.getElementById('register-confirm-password').value;
-    const isAdmin = document.getElementById('register-admin') ? document.getElementById('register-admin').checked : false;
     const messageElement = document.getElementById('register-message');
     
     // Validar entrada
@@ -980,12 +1166,6 @@ async function handleRegister(e) {
         return;
     }
     
-    // Verificar se já existe um administrador
-    if (isAdmin && adminUserExists) {
-        showFormMessage(messageElement, 'Já existe um administrador no sistema. Apenas o administrador master pode criar novos administradores.', 'error');
-        return;
-    }
-    
     try {
         showFormMessage(messageElement, 'Criando conta...', 'info');
         
@@ -998,8 +1178,8 @@ async function handleRegister(e) {
             displayName: name
         });
         
-        // Determinar a função do usuário
-        const userRole = isAdmin ? 'admin' : 'player';
+        // Determinar a função do usuário (sempre player para registro normal)
+        const userRole = 'player';
         
         // Criar documento do usuário no Firestore
         const userData = {
@@ -1014,12 +1194,6 @@ async function handleRegister(e) {
         
         await db.collection('users').doc(user.uid).set(userData);
         
-        // Atualizar a flag de administrador existente
-        if (isAdmin) {
-            adminUserExists = true;
-            updateAdminRegisterOption();
-        }
-        
         showFormMessage(messageElement, 'Conta criada com sucesso!', 'success');
         
         // Fechar modal após 1.5 segundos
@@ -1029,6 +1203,17 @@ async function handleRegister(e) {
             
             // Limpar formulário
             registerForm.reset();
+            
+            // Se estava na tela de boas-vindas, ir para o jogo
+            if (welcomeScreen.classList.contains('active')) {
+                welcomeScreen.classList.remove('active');
+                welcomeScreen.classList.add('hidden');
+                mainApp.classList.add('active');
+                showSection('game-section');
+            }
+            
+            // Não é mais visitante
+            isGuest = false;
         }, 1500);
         
     } catch (error) {
@@ -1107,7 +1292,8 @@ async function handleLogout() {
         console.log("Usuário deslogado com sucesso");
         
         // Redirecionar para a página inicial
-        showSection('game-section');
+        showSection('home-section');
+        isGuest = false;
         
     } catch (error) {
         console.error("Erro ao fazer logout:", error);
@@ -1133,47 +1319,31 @@ function clearFormMessage(element) {
     element.style.display = 'none';
 }
 
-// Salvar pontuação
-async function saveScore() {
-    if (!currentUser || !gameCompleted) {
-        alert('Complete o jogo primeiro e certifique-se de estar logado para salvar sua pontuação!');
-        return;
-    }
+// Mudar tema
+function changeTheme(theme) {
+    if (!themes[theme]) return;
     
-    try {
-        // Criar objeto de pontuação
-        const scoreData = {
-            userId: currentUser.uid,
-            userName: currentUser.displayName || currentUser.email.split('@')[0],
-            moves: moves,
-            time: timer,
-            difficulty: currentDifficulty,
-            date: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        // Salvar no Firestore
-        await db.collection('scores').add(scoreData);
-        
-        alert('Pontuação salva com sucesso!');
-        
-        // Esconder botão de salvar pontuação
-        if (saveScoreContainer) {
-            saveScoreContainer.style.display = 'none';
+    currentTheme = theme;
+    
+    // Atualizar cards de tema
+    themeCards.forEach(card => {
+        card.classList.remove('active');
+        if (card.dataset.theme === theme) {
+            card.classList.add('active');
         }
-        
-        // Recarregar ranking se estiver visível
-        if (rankingSection.classList.contains('active')) {
-            loadRanking();
-        }
-        
-        // Recarregar perfil se estiver visível
-        if (profileSection.classList.contains('active')) {
-            loadUserProfile();
-        }
-        
-    } catch (error) {
-        console.error("Erro ao salvar pontuação:", error);
-        alert('Erro ao salvar pontuação. Tente novamente.');
+    });
+    
+    // Atualizar nome do tema na interface
+    document.getElementById('current-theme').textContent = themes[theme].name;
+    
+    // Recriar o tabuleiro com o novo tema
+    createBoard();
+    renderBoard();
+    createSolutionBoard();
+    
+    // Se estiver na seção de temas, voltar para o jogo
+    if (themesSection.classList.contains('active')) {
+        showSection('game-section');
     }
 }
 
@@ -1192,6 +1362,7 @@ async function loadRanking() {
         // Obter filtros
         const difficulty = document.getElementById('ranking-difficulty').value;
         const period = document.getElementById('ranking-period').value;
+        const theme = document.getElementById('ranking-theme').value;
         
         // Construir query
         let query = db.collection('scores').orderBy('moves').limit(50);
@@ -1199,6 +1370,11 @@ async function loadRanking() {
         // Aplicar filtro de dificuldade
         if (difficulty !== 'all') {
             query = query.where('difficulty', '==', difficulty);
+        }
+        
+        // Aplicar filtro de tema
+        if (theme !== 'all') {
+            query = query.where('theme', '==', theme);
         }
         
         // Aplicar filtro de período
@@ -1223,9 +1399,12 @@ async function loadRanking() {
         // Processar resultados
         const scores = [];
         snapshot.forEach(doc => {
+            const data = doc.data();
             scores.push({
                 id: doc.id,
-                ...doc.data()
+                ...data,
+                // Garantir que a data seja um objeto Date
+                date: data.date && data.date.toDate ? data.date.toDate() : new Date()
             });
         });
         
@@ -1254,8 +1433,7 @@ async function loadRanking() {
                 }
                 
                 // Formatar data
-                const date = score.date.toDate ? score.date.toDate() : new Date();
-                const formattedDate = date.toLocaleDateString('pt-BR');
+                const formattedDate = score.date.toLocaleDateString('pt-BR');
                 
                 // Emoji de medalha para os 3 primeiros
                 let medal = '';
@@ -1270,7 +1448,7 @@ async function loadRanking() {
                     </div>
                     <div class="ranking-user">
                         <div class="ranking-name">${score.userName}</div>
-                        <div class="ranking-email">${formattedDate} • ${getDifficultyText(score.difficulty)}</div>
+                        <div class="ranking-email">${formattedDate} • ${getDifficultyText(score.difficulty)} • ${themes[score.theme]?.name || score.theme}</div>
                     </div>
                     <div class="ranking-score">
                         <div class="ranking-moves">
@@ -1307,109 +1485,37 @@ function getDifficultyText(difficulty) {
     }
 }
 
-// Carregar perfil do usuário
-async function loadUserProfile() {
-    if (!currentUser) {
-        showSection('game-section');
-        showLoginModal();
-        return;
-    }
-    
-    const loadingElement = document.getElementById('user-scores-loading');
-    const scoresListElement = document.getElementById('user-scores-list');
-    
-    if (loadingElement) loadingElement.style.display = 'flex';
-    if (scoresListElement) scoresListElement.innerHTML = '';
-    
+// Carregar estatísticas globais
+async function loadGlobalStats() {
     try {
-        // Carregar pontuações do usuário
-        const scoresSnapshot = await db.collection('scores')
-            .where('userId', '==', currentUser.uid)
-            .orderBy('date', 'desc')
-            .limit(10)
-            .get();
+        // Carregar total de jogos
+        const scoresSnapshot = await db.collection('scores').get();
+        const totalGames = scoresSnapshot.size;
+        document.getElementById('total-games-global').textContent = totalGames;
         
-        const scores = [];
+        // Calcular média de movimentos
+        let totalMoves = 0;
         scoresSnapshot.forEach(doc => {
-            scores.push({
-                id: doc.id,
-                ...doc.data()
-            });
+            totalMoves += doc.data().moves;
         });
+        const avgMoves = totalGames > 0 ? Math.round(totalMoves / totalGames) : 0;
+        document.getElementById('avg-moves-global').textContent = avgMoves;
         
-        // Atualizar lista de pontuações
-        if (scoresListElement) {
-            if (scores.length === 0) {
-                scoresListElement.innerHTML = '<p class="no-scores">Nenhuma pontuação salva ainda.</p>';
-            } else {
-                scores.forEach(score => {
-                    const scoreItem = document.createElement('div');
-                    scoreItem.className = 'score-item';
-                    
-                    const date = score.date.toDate ? score.date.toDate() : new Date();
-                    const formattedDate = date.toLocaleDateString('pt-BR');
-                    
-                    scoreItem.innerHTML = `
-                        <div class="score-date">${formattedDate}</div>
-                        <div class="score-info">
-                            <span class="score-difficulty ${score.difficulty}">${getDifficultyText(score.difficulty)}</span>
-                        </div>
-                        <div class="score-details">
-                            <span>${score.moves} movimentos</span>
-                            <span>${formatTime(score.time)}</span>
-                        </div>
-                    `;
-                    
-                    scoresListElement.appendChild(scoreItem);
-                });
-            }
-        }
+        // Calcular média de tempo
+        let totalTime = 0;
+        scoresSnapshot.forEach(doc => {
+            totalTime += doc.data().time;
+        });
+        const avgTime = totalGames > 0 ? Math.round(totalTime / totalGames) : 0;
+        document.getElementById('avg-time-global').textContent = formatTime(avgTime);
         
-        // Carregar estatísticas do usuário
-        await loadUserStats();
+        // Carregar total de jogadores
+        const usersSnapshot = await db.collection('users').get();
+        const totalPlayers = usersSnapshot.size;
+        document.getElementById('total-players').textContent = totalPlayers;
         
     } catch (error) {
-        console.error("Erro ao carregar perfil do usuário:", error);
-        if (scoresListElement) {
-            scoresListElement.innerHTML = '<p class="error-message">Erro ao carregar pontuações.</p>';
-        }
-    } finally {
-        if (loadingElement) loadingElement.style.display = 'none';
-    }
-}
-
-// Carregar estatísticas do usuário
-async function loadUserStats() {
-    try {
-        const scoresSnapshot = await db.collection('scores')
-            .where('userId', '==', currentUser.uid)
-            .get();
-        
-        const scores = [];
-        scoresSnapshot.forEach(doc => {
-            scores.push(doc.data());
-        });
-        
-        // Calcular estatísticas
-        const totalGames = scores.length;
-        const bestMoveScore = scores.length > 0 ? Math.min(...scores.map(s => s.moves)) : '-';
-        const bestTimeScore = scores.length > 0 ? Math.min(...scores.map(s => s.time)) : '-';
-        const avgMoves = scores.length > 0 ? 
-            Math.round(scores.reduce((sum, s) => sum + s.moves, 0) / scores.length) : '-';
-        
-        // Atualizar elementos da UI
-        const totalGamesElement = document.getElementById('total-games');
-        const bestMovesElement = document.getElementById('best-moves');
-        const bestTimeElement = document.getElementById('best-time');
-        const avgMovesElement = document.getElementById('avg-moves');
-        
-        if (totalGamesElement) totalGamesElement.textContent = totalGames;
-        if (bestMovesElement) bestMovesElement.textContent = bestMoveScore;
-        if (bestTimeElement) bestTimeElement.textContent = bestTimeScore !== '-' ? formatTime(bestTimeScore) : '-';
-        if (avgMovesElement) avgMovesElement.textContent = avgMoves;
-        
-    } catch (error) {
-        console.error("Erro ao carregar estatísticas do usuário:", error);
+        console.error("Erro ao carregar estatísticas globais:", error);
     }
 }
 
@@ -1523,17 +1629,27 @@ async function openEditUserModal(userId) {
         // Mostrar modal
         document.getElementById('edit-user-modal').style.display = 'flex';
         
+        // Adicionar event listener ao formulário de edição
+        const editUserForm = document.getElementById('edit-user-form');
+        if (editUserForm) {
+            // Remover event listeners anteriores
+            editUserForm.replaceWith(editUserForm.cloneNode(true));
+            
+            // Adicionar novo event listener
+            document.getElementById('edit-user-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleEditUser(userId);
+            });
+        }
+        
     } catch (error) {
         console.error("Erro ao abrir modal de edição de usuário:", error);
         alert('Erro ao carregar dados do usuário.');
     }
 }
 
-// Manipular edição de usuário
-async function handleEditUser(e) {
-    e.preventDefault();
-    
-    const userId = document.getElementById('edit-user-id').value;
+// Manipular edição de usuário (função modificada para receber userId como parâmetro)
+async function handleEditUser(userId) {
     const name = document.getElementById('edit-user-name').value;
     const email = document.getElementById('edit-user-email').value;
     const role = document.getElementById('edit-user-role').value;
@@ -1558,13 +1674,6 @@ async function handleEditUser(e) {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
-        // Atualizar senha se fornecida
-        if (password && password.length >= 6) {
-            // Nota: Para atualizar a senha, precisaríamos do Firebase Admin SDK no backend
-            // Por enquanto, apenas adicionamos um campo para futura implementação
-            updateData.passwordUpdated = true;
-        }
-        
         await db.collection('users').doc(userId).update(updateData);
         
         showFormMessage(messageElement, 'Usuário atualizado com sucesso!', 'success');
@@ -1587,12 +1696,24 @@ async function loadAdminScores() {
     const loadingElement = document.getElementById('admin-scores-loading');
     const scoresListElement = document.getElementById('admin-scores-list');
     
+    if (!currentUser) return;
+    
+    // Verificar se o usuário atual é administrador
+    const isAdmin = await checkIfUserIsAdmin(currentUser.uid);
+    if (!isAdmin) {
+        if (scoresListElement) {
+            scoresListElement.innerHTML = '<p class="error-message">Acesso negado. Apenas administradores podem acessar esta área.</p>';
+        }
+        return;
+    }
+    
     if (loadingElement) loadingElement.style.display = 'flex';
     if (scoresListElement) scoresListElement.innerHTML = '';
     
     try {
         // Obter filtros
         const difficulty = document.getElementById('admin-score-difficulty').value;
+        const theme = document.getElementById('admin-score-theme').value;
         const dateFilter = document.getElementById('admin-score-date').value;
         
         // Construir query
@@ -1601,6 +1722,11 @@ async function loadAdminScores() {
         // Aplicar filtro de dificuldade
         if (difficulty !== 'all') {
             query = query.where('difficulty', '==', difficulty);
+        }
+        
+        // Aplicar filtro de tema
+        if (theme !== 'all') {
+            query = query.where('theme', '==', theme);
         }
         
         // Aplicar filtro de data
@@ -1619,9 +1745,11 @@ async function loadAdminScores() {
         
         const scores = [];
         snapshot.forEach(doc => {
+            const data = doc.data();
             scores.push({
                 id: doc.id,
-                ...doc.data()
+                ...data,
+                date: data.date && data.date.toDate ? data.date.toDate() : new Date()
             });
         });
         
@@ -1634,7 +1762,7 @@ async function loadAdminScores() {
                     const scoreItem = document.createElement('div');
                     scoreItem.className = 'score-item';
                     
-                    const date = score.date.toDate ? score.date.toDate() : new Date();
+                    const date = score.date;
                     const formattedDate = date.toLocaleDateString('pt-BR');
                     const formattedTime = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                     
@@ -1642,7 +1770,7 @@ async function loadAdminScores() {
                         <div class="score-date">${formattedDate} ${formattedTime}</div>
                         <div class="score-info">
                             <span class="score-user">${score.userName}</span>
-                            <span class="score-difficulty ${score.difficulty}">${getDifficultyText(score.difficulty)}</span>
+                            <span class="score-difficulty">${getDifficultyText(score.difficulty)} • ${themes[score.theme]?.name || score.theme}</span>
                         </div>
                         <div class="score-details">
                             <span>${score.moves} movimentos</span>
@@ -1670,7 +1798,7 @@ async function loadAdminScores() {
     } catch (error) {
         console.error("Erro ao carregar pontuações:", error);
         if (scoresListElement) {
-            scoresListElement.innerHTML = '<p class="error-message">Erro ao carregar pontuações.</p>';
+            scoresListElement.innerHTML = '<p class="error-message">Erro ao carregar pontuações. Tente novamente.</p>';
         }
     } finally {
         if (loadingElement) loadingElement.style.display = 'none';
@@ -1773,36 +1901,36 @@ async function handleAdminRegister(e) {
     try {
         showFormMessage(messageElement, 'Criando conta...', 'info');
         
-        // Criar usuário com Firebase Auth (apenas administradores podem fazer isso)
+        // Verificar se o usuário atual é administrador
         const isAdmin = await checkIfUserIsAdmin(currentUser.uid);
         if (!isAdmin) {
             showFormMessage(messageElement, 'Apenas administradores podem criar novas contas.', 'error');
             return;
         }
         
-        // Nota: Para criar usuários programaticamente, precisaríamos do Firebase Admin SDK no backend
-        // Por enquanto, vamos apenas criar o documento no Firestore
-        // Em um sistema real, você precisaria de uma função backend para criar o usuário
+        // Criar usuário com Firebase Auth
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        // Atualizar nome de exibição
+        await user.updateProfile({
+            displayName: name
+        });
         
         // Criar documento do usuário no Firestore
-        // Gerar um ID temporário (em produção, use o UID do Firebase Auth)
-        const tempUserId = 'temp_' + Date.now();
-        
         const userData = {
-            uid: tempUserId,
+            uid: user.uid,
             email: email,
             name: name,
             role: role,
-            status: 'active',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             createdBy: currentUser.uid,
-            requiresAuthSetup: true,
-            tempPassword: password // Em produção, NUNCA armazene senhas em texto claro
+            status: 'active'
         };
         
-        await db.collection('users').doc(tempUserId).set(userData);
+        await db.collection('users').doc(user.uid).set(userData);
         
-        showFormMessage(messageElement, 'Usuário cadastrado com sucesso! Nota: Para acesso completo, configure o Firebase Admin SDK no backend.', 'success');
+        showFormMessage(messageElement, 'Usuário cadastrado com sucesso!', 'success');
         
         // Limpar formulário após 3 segundos
         setTimeout(() => {
@@ -1815,7 +1943,19 @@ async function handleAdminRegister(e) {
         
     } catch (error) {
         console.error("Erro ao criar conta de usuário:", error);
-        showFormMessage(messageElement, 'Erro ao criar conta de usuário. Tente novamente.', 'error');
+        
+        let errorMessage = 'Erro ao criar conta de usuário. ';
+        switch (error.code) {
+            case 'auth/email-already-in-use':
+                errorMessage += 'Este email já está em uso.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage += 'Email inválido.';
+                break;
+            default:
+                errorMessage += 'Tente novamente mais tarde.';
+        }
+        
+        showFormMessage(messageElement, errorMessage, 'error');
     }
-
 }
