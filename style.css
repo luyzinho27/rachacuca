@@ -37,7 +37,7 @@ body {
 
 /* Tela de Boas-vindas */
 .welcome-screen {
-    position: fixed;
+    /* position: fixed; */
     top: 0;
     left: 0;
     width: 100%;
@@ -1723,3 +1723,4 @@ body {
     .piece-15 { top: 200px; left: 135px; }
     .piece-empty { top: 200px; left: 200px; }
 }
+
