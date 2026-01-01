@@ -50,9 +50,9 @@ const themes = {
     },
     words: {
         name: "Palavras",
-        items: ['R', 'A', 'C', 'H', 'A', 'C', 'U', 'C', 'A', 'M', 'A', 'T', 'O', 'A', 'T', null],
+        items: ['M', 'A', 'T', 'O', 'A', 'T', 'A', 'R', 'C', 'U', 'C', 'A', 'A', 'M', 'O', null],
         className: 'word',
-        solutionText: "R A C H A\nC U C A  \nM A T O\nA T A R"
+        solutionText: "M A T O\nA T A R\nC U C A\nA M O\n"
     },
     animals: {
         name: "Animais",
@@ -1959,3 +1959,4 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, errorMessage, 'error');
     }
 }
+
