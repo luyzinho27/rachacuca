@@ -2119,3 +2119,48 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Estilos para o checkbox de tipo de usuário */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.checkbox-label {
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--dark-color);
+}
+
+/* Estilo específico para o formulário de registro */
+#register-role-container {
+    background-color: rgba(243, 156, 18, 0.1);
+    padding: 15px;
+    border-radius: var(--border-radius-sm);
+    border-left: 3px solid var(--accent-color);
+    margin-top: 10px;
+}
+
+#register-role-container .form-hint {
+    display: block;
+    margin-top: 8px;
+    color: var(--gray);
+    font-size: 0.8rem;
+}
+
+/* Responsividade para o checkbox */
+@media (max-width: 480px) {
+    .checkbox-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
