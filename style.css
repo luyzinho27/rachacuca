@@ -1,4 +1,4 @@
-/* style.css */
+/* style.css - Atualizado */
 :root {
     --primary-color: #2c3e50;
     --primary-dark: #1a252f;
@@ -35,7 +35,7 @@ body {
     overflow-x: hidden;
 }
 
-/* Tela de Boas-vindas */
+/* Tela de Boas-vindas - CORRIGIDO */
 .welcome-screen {
     position: fixed;
     top: 0;
@@ -824,13 +824,14 @@ body {
 
 /* Solution Preview */
 .solution-board {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-    gap: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     background-color: white;
-    padding: 4px;
+    padding: 15px;
     border-radius: 6px;
+    min-height: 250px;
 }
 
 .solution-tile {
@@ -848,6 +849,15 @@ body {
 .solution-tile.empty {
     background-color: var(--gray-light);
     color: transparent;
+}
+
+.solution-full-image {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 6px;
+    margin-bottom: 10px;
 }
 
 /* Seção de Ranking */
@@ -1080,57 +1090,61 @@ body {
     box-shadow: var(--box-shadow);
 }
 
-.stats-summary {
+.progress-stats {
     margin-bottom: 30px;
 }
 
-.stats-summary h3 {
-    color: var(--primary-color);
-    margin-bottom: 20px;
-    font-size: 1.4rem;
-}
-
-.charts-container {
+.progress-charts {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 25px;
     margin-bottom: 30px;
 }
 
-.chart-box {
+.chart-container {
     background-color: white;
     border-radius: var(--border-radius);
     padding: 20px;
     box-shadow: var(--box-shadow);
 }
 
-.chart-box h3 {
+.chart-container h3, .chart-container h4 {
     color: var(--primary-color);
     margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 1.2rem;
-    text-align: center;
 }
 
-.recent-games {
+.chart-container canvas {
+    width: 100% !important;
+    height: 250px !important;
+}
+
+.recent-scores {
     background-color: white;
     border-radius: var(--border-radius);
     padding: 20px;
     box-shadow: var(--box-shadow);
 }
 
-.recent-games h3 {
+.recent-scores h3 {
     color: var(--primary-color);
     margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 1.2rem;
 }
 
-.recent-games-list {
+.scores-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
-.recent-game-item {
+.score-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1140,35 +1154,40 @@ body {
     border-left: 4px solid var(--primary-color);
 }
 
-.recent-game-info {
+.score-date {
+    font-size: 0.8rem;
+    color: var(--gray);
+    min-width: 120px;
+}
+
+.score-info {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
 }
 
-.recent-game-theme {
+.score-user, .score-difficulty, .score-theme {
+    font-size: 0.85rem;
+}
+
+.score-user {
+    font-weight: 600;
+}
+
+.score-difficulty, .score-theme {
+    color: var(--gray-dark);
+}
+
+.score-details {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.score-details span {
     font-weight: 600;
     color: var(--primary-color);
-}
-
-.recent-game-details {
-    font-size: 0.85rem;
-    color: var(--gray-dark);
-}
-
-.recent-game-score {
-    text-align: right;
-}
-
-.recent-game-moves {
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: var(--primary-color);
-}
-
-.recent-game-time {
-    font-size: 0.85rem;
-    color: var(--gray-dark);
 }
 
 /* Seção de Administração */
@@ -1188,7 +1207,7 @@ body {
     display: flex;
     background-color: white;
     border-bottom: 1px solid var(--gray-light);
-    overflow-x: auto;
+    flex-wrap: wrap;
 }
 
 .admin-tab {
@@ -1205,7 +1224,6 @@ body {
     align-items: center;
     gap: 8px;
     border-bottom: 3px solid transparent;
-    white-space: nowrap;
 }
 
 .admin-tab:hover {
@@ -1356,72 +1374,60 @@ body {
     flex-wrap: wrap;
 }
 
+/* Gerenciamento de Temas */
 .admin-actions {
     margin-bottom: 20px;
 }
 
 .themes-admin-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .theme-admin-item {
-    background-color: white;
-    border-radius: var(--border-radius);
-    padding: 15px;
-    box-shadow: var(--box-shadow);
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.theme-admin-preview {
-    height: 120px;
-    background-size: cover;
-    background-position: center;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: white;
     border-radius: var(--border-radius-sm);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border-left: 4px solid var(--accent-color);
 }
 
 .theme-admin-info {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+    flex: 1;
 }
 
 .theme-admin-name {
     font-weight: 600;
     font-size: 1.1rem;
     color: var(--primary-color);
+    margin-bottom: 5px;
 }
 
-.theme-admin-category {
-    font-size: 0.85rem;
+.theme-admin-description {
+    font-size: 0.9rem;
+    color: var(--gray);
+    margin-bottom: 8px;
+}
+
+.theme-admin-meta {
+    font-size: 0.8rem;
     color: var(--gray-dark);
-}
-
-.theme-admin-status {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.theme-admin-status.active {
-    background-color: rgba(39, 174, 96, 0.2);
-    color: var(--success-color);
-}
-
-.theme-admin-status.inactive {
-    background-color: rgba(231, 76, 60, 0.2);
-    color: var(--danger-color);
 }
 
 .theme-admin-actions {
     display: flex;
     gap: 8px;
-    margin-top: 10px;
+}
+
+/* Estatísticas de Administração */
+.admin-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
 }
 
 /* Formulários de autenticação */
@@ -1441,24 +1447,13 @@ body {
     gap: 6px;
 }
 
-.form-group-checkbox {
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-}
-
-.form-group-checkbox input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-}
-
 .form-group label {
     font-weight: 500;
     color: var(--dark-color);
     font-size: 0.9rem;
 }
 
-.form-group input, .form-group select {
+.form-group input, .form-group select, .form-group textarea {
     padding: 10px 12px;
     border: 1px solid var(--gray);
     border-radius: var(--border-radius-sm);
@@ -1467,15 +1462,30 @@ body {
     transition: var(--transition);
 }
 
-.form-group input:focus, .form-group select:focus {
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.2);
 }
 
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
 .form-hint {
     color: var(--gray);
     font-size: 0.8rem;
+}
+
+.remember-me {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.remember-me input {
+    width: auto;
 }
 
 .form-message {
@@ -1792,10 +1802,6 @@ body {
     .puzzle-board {
         max-width: 400px;
     }
-    
-    .charts-container {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 900px) {
@@ -1841,6 +1847,10 @@ body {
     
     .welcome-message h2 {
         font-size: 1.6rem;
+    }
+    
+    .progress-charts {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1918,8 +1928,15 @@ body {
     .piece-15 { top: 194px; left: 132px; }
     .piece-empty { top: 194px; left: 194px; }
     
-    .charts-container {
-        grid-template-columns: 1fr;
+    .score-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .score-details {
+        width: 100%;
+        justify-content: space-between;
     }
 }
 
@@ -2007,7 +2024,11 @@ body {
         grid-template-columns: 1fr;
     }
     
-    .theme-admin-item {
-        min-width: 100%;
+    .admin-filters {
+        flex-direction: column;
+    }
+    
+    .filter-select {
+        width: 100%;
     }
 }
