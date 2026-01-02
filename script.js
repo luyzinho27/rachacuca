@@ -14,24 +14,23 @@ let app, auth, db;
 let currentUser = null;
 let adminUserExists = false;
 let isGuest = false;
-let isAdmin = false;
+let rememberMe = false;
 
 // Elementos do DOM
 let welcomeScreen, mainApp;
 let puzzleBoard, moveCounter, timerElement, shuffleBtn, solveBtn, resetBtn, hintBtn;
 let playAgainBtn, completionMessage, finalMoves, finalTime;
 let difficultyBtns, authModal, loginBtn, registerBtn, logoutBtn, userInfo, userName;
-let adminNavItem, homeSection, gameSection, rankingSection, progressSection, themesSection, adminSection;
+let adminNavItem, homeSection, gameSection, progressSection, rankingSection, themesSection, adminSection;
 let rankingList, userScoresList, usersList, adminScoresList;
 let loginForm, registerForm, resetForm, adminRegisterForm, editUserForm;
 let authButtons, userInfoContainer, dbStatus;
 let playGuestBtn, welcomeLoginBtn, welcomeRegisterBtn, quickPlayBtn;
 let heroPlayBtn, heroHowtoBtn, changeThemeBtn, themeCards;
 let instructionsModal, startPlayingBtn;
-let imageUploadModal, imageUploadForm, imageFileInput, useImageBtn, imagePreviewContainer;
-let customThemeModal, customThemeForm, customThemeImageInput, customThemeNameInput;
-let themesGrid, createThemeAdminBtn, customThemesList;
-let difficultyChart, themeChart, adminGamesChart, adminUsersChart;
+let createCustomThemeBtn, manageThemesBtn, themeEditModal, themeEditForm;
+let confirmationModal, confirmActionBtn, cancelActionBtn;
+let progressCharts = {};
 
 // Variáveis do jogo
 let board = [];
@@ -45,67 +44,68 @@ let currentDifficulty = 'normal';
 let gameActive = false;
 let currentTheme = 'numbers';
 let customImageData = null;
-let temporaryCustomImage = null;
+let selectedThemeId = null;
 
-// Temas disponíveis
-let themes = {
+// Temas padrão
+const defaultThemes = {
     numbers: {
         id: 'numbers',
         name: "Números",
+        type: 'default',
         items: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', null],
         className: 'number',
-        type: 'builtin',
-        solutionText: "1 2 3 4\n5 6 7 8\n9 10 11 12\n13 14 15"
+        solutionText: "1 2 3 4\n5 6 7 8\n9 10 11 12\n13 14 15",
+        previewText: "1 2 3 4<br>5 6 7 8<br>9 10 11 12<br>13 14 15"
     },
     words: {
         id: 'words',
         name: "Palavras",
+        type: 'default',
         items: ['M', 'A', 'T', 'O', 'A', 'T', 'A', 'R', 'C', 'U', 'C', 'A', 'A', 'M', 'O', null],
         className: 'word',
-        type: 'builtin',
-        solutionText: "M A T O\nA T A R\nC U C A\nA M O\n"
+        solutionText: "M A T O\nA T A R\nC U C A\nA M O",
+        previewText: "M A T O<br>A T A R<br>C U C A<br>A M O"
     },
     animals: {
         id: 'animals',
         name: "Animais",
+        type: 'default',
         items: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', null],
         className: 'emoji',
-        type: 'builtin',
-        solutionText: "🐶 🐱 🐭 🐹\n🐰 🦊 🐻 🐼\n🐨 🦁 🐮 🐷\n🐸 🐵 🐔"
+        solutionText: "🐶 🐱 🐭 🐹\n🐰 🦊 🐻 🐼\n🐨 🦁 🐮 🐷\n🐸 🐵 🐔",
+        previewText: "🐶 🐱 🐭 🐹<br>🐰 🦊 🐻 🐼<br>🐨 🦁 🐮 🐷<br>🐸 🐵 🐔"
     },
     fruits: {
         id: 'fruits',
         name: "Frutas",
+        type: 'default',
         items: ['🍎', '🍌', '🍇', '🍓', '🍉', '🍊', '🍑', '🍍', '🥭', '🍒', '🥝', '🍏', '🥥', '🍈', '🫐', null],
         className: 'emoji',
-        type: 'builtin',
-        solutionText: "🍎 🍌 🍇 🍓\n🍉 🍊 🍑 🍍\n🥭 🍒 🥝 🍏\n🥥 🍈 🫐"
+        solutionText: "🍎 🍌 🍇 🍓\n🍉 🍊 🍑 🍍\n🥭 🍒 🥝 🍏\n🥥 🍈 🫐",
+        previewText: "🍎 🍌 🍇 🍓<br>🍉 🍊 🍑 🍍<br>🥭 🍒 🥝 🍏<br>🥥 🍈 🫐"
     },
     flags: {
         id: 'flags',
         name: "Bandeiras",
+        type: 'default',
         items: ['🇧🇷', '🇺🇸', '🇨🇳', '🇯🇵', '🇩🇪', '🇫🇷', '🇮🇹', '🇪🇸', '🇬🇧', '🇨🇦', '🇦🇺', '🇰🇷', '🇦🇷', '🇲🇽', '🇵🇹', null],
         className: 'emoji',
-        type: 'builtin',
-        solutionText: "🇧🇷 🇺🇸 🇨🇳 🇯🇵\n🇩🇪 🇫🇷 🇮🇹 🇪🇸\n🇬🇧 🇨🇦 🇦🇺 🇰🇷\n🇦🇷 🇲🇽 🇵🇹"
+        solutionText: "🇧🇷 🇺🇸 🇨🇳 🇯🇵\n🇩🇪 🇫🇷 🇮🇹 🇪🇸\n🇬🇧 🇨🇦 🇦🇺 🇰🇷\n🇦🇷 🇲🇽 🇵🇹",
+        previewText: "🇧🇷 🇺🇸 🇨🇳 🇯🇵<br>🇩🇪 🇫🇷 🇮🇹 🇪🇸<br>🇬🇧 🇨🇦 🇦🇺 🇰🇷<br>🇦🇷 🇲🇽 🇵🇹"
     },
     emoji: {
         id: 'emoji',
         name: "Emojis",
+        type: 'default',
         items: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '😍', '😘', '😋', '😜', '🤪', null],
         className: 'emoji',
-        type: 'builtin',
-        solutionText: "😀 😃 😄 😁\n😆 😅 😂 🤣\n😊 😇 😍 😘\n😋 😜 🤪"
-    },
-    'custom-image': {
-        id: 'custom-image',
-        name: "Imagem Personalizada",
-        items: [],
-        className: 'image-piece',
-        type: 'temporary',
-        solutionText: "Imagem Personalizada"
+        solutionText: "😀 😃 😄 😁\n😆 😅 😂 🤣\n😊 😇 😍 😘\n😋 😜 🤪",
+        previewText: "😀 😃 😄 😁<br>😆 😅 😂 🤣<br>😊 😇 😍 😘<br>😋 😜 🤪"
     }
 };
+
+// Temas personalizados carregados do Firebase
+let customThemes = {};
 
 // Variáveis para drag and drop
 let draggedTile = null;
@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
     checkAuthState();
     initializePreviewBoard();
     loadGlobalStats();
-    loadThemesFromFirebase();
+    loadDefaultThemes();
 });
 
 // Inicializar Firebase
@@ -135,8 +135,12 @@ function initializeFirebase() {
         console.log("Firebase inicializado com sucesso!");
         updateDBStatus("Conectado", "connected");
         
-        // Verificar se já existe um administrador no sistema
-        checkAdminExists();
+        // Configurar persistência de autenticação
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+            .catch(error => {
+                console.error("Erro ao configurar persistência:", error);
+            });
+        
     } catch (error) {
         console.error("Erro ao inicializar Firebase:", error);
         updateDBStatus("Erro de conexão", "error");
@@ -149,19 +153,6 @@ function updateDBStatus(status, className) {
     if (dbStatusElement) {
         dbStatusElement.textContent = status;
         dbStatusElement.className = className;
-    }
-}
-
-// Verificar se já existe um administrador no sistema
-async function checkAdminExists() {
-    try {
-        const usersRef = db.collection('users');
-        const snapshot = await usersRef.where('role', '==', 'admin').limit(1).get();
-        
-        adminUserExists = !snapshot.empty;
-        console.log("Admin existe:", adminUserExists);
-    } catch (error) {
-        console.error("Erro ao verificar administrador:", error);
     }
 }
 
@@ -189,22 +180,20 @@ function initializeDOMElements() {
     finalMoves = document.getElementById('final-moves');
     finalTime = document.getElementById('final-time');
     difficultyBtns = document.querySelectorAll('.difficulty-btn');
-    themesGrid = document.getElementById('themes-grid');
-    createThemeAdminBtn = document.getElementById('create-theme-admin-btn');
     
     // Seções da página
     homeSection = document.getElementById('home-section');
     gameSection = document.getElementById('game-section');
-    rankingSection = document.getElementById('ranking-section');
     progressSection = document.getElementById('progress-section');
+    rankingSection = document.getElementById('ranking-section');
     themesSection = document.getElementById('themes-section');
     adminSection = document.getElementById('admin-section');
     
     // Navegação
     const navHome = document.getElementById('nav-home');
     const navGame = document.getElementById('nav-game');
-    const navRanking = document.getElementById('nav-ranking');
     const navProgress = document.getElementById('nav-progress');
+    const navRanking = document.getElementById('nav-ranking');
     const navThemes = document.getElementById('nav-themes');
     const navAdmin = document.getElementById('nav-admin');
     adminNavItem = document.getElementById('admin-nav-item');
@@ -228,13 +217,9 @@ function initializeDOMElements() {
     // Elementos do ranking
     rankingList = document.getElementById('ranking-list');
     
-    // Elementos de progresso
-    userScoresList = document.getElementById('user-scores-list');
-    
     // Elementos de administração
     usersList = document.getElementById('users-list');
     adminScoresList = document.getElementById('admin-scores-list');
-    customThemesList = document.getElementById('custom-themes-list');
     
     // Status do banco de dados
     dbStatus = document.getElementById('db-status');
@@ -247,18 +232,104 @@ function initializeDOMElements() {
     instructionsModal = document.getElementById('instructions-modal');
     startPlayingBtn = document.getElementById('start-playing-btn');
     
-    // Modal de upload de imagem (usuário comum)
-    imageUploadModal = document.getElementById('image-upload-modal');
-    imageUploadForm = document.getElementById('image-upload-form');
-    imageFileInput = document.getElementById('image-file');
-    useImageBtn = document.getElementById('use-image-btn');
-    imagePreviewContainer = document.getElementById('image-preview-container');
+    // Elementos de temas
+    createCustomThemeBtn = document.getElementById('create-custom-theme-btn');
+    manageThemesBtn = document.getElementById('manage-themes-btn');
+    themeEditModal = document.getElementById('theme-edit-modal');
+    themeEditForm = document.getElementById('theme-edit-form');
     
-    // Modal de criação/edição de tema (admin)
-    customThemeModal = document.getElementById('custom-theme-modal');
-    customThemeForm = document.getElementById('custom-theme-form');
-    customThemeImageInput = document.getElementById('custom-theme-image');
-    customThemeNameInput = document.getElementById('custom-theme-name');
+    // Modal de confirmação
+    confirmationModal = document.getElementById('confirmation-modal');
+    confirmActionBtn = document.getElementById('confirm-action-btn');
+    cancelActionBtn = document.getElementById('cancel-action-btn');
+}
+
+// Carregar temas padrão na interface
+function loadDefaultThemes() {
+    const themesGrid = document.getElementById('themes-grid');
+    if (!themesGrid) return;
+    
+    themesGrid.innerHTML = '';
+    
+    Object.values(defaultThemes).forEach(theme => {
+        const themeCard = document.createElement('div');
+        themeCard.className = `theme-card ${currentTheme === theme.id ? 'active' : ''}`;
+        themeCard.dataset.themeId = theme.id;
+        themeCard.dataset.themeType = 'default';
+        
+        themeCard.innerHTML = `
+            <div class="theme-preview">
+                <div class="theme-example">${theme.previewText}</div>
+            </div>
+            <div class="theme-info">
+                <h3>${theme.name}</h3>
+                <p>Tema padrão do jogo</p>
+            </div>
+            ${currentTheme === theme.id ? '<div class="theme-badge"><i class="fas fa-check"></i> Ativo</div>' : ''}
+        `;
+        
+        themesGrid.appendChild(themeCard);
+    });
+    
+    // Carregar temas personalizados
+    loadCustomThemes();
+}
+
+// Carregar temas personalizados do Firebase
+async function loadCustomThemes() {
+    try {
+        const themesSnapshot = await db.collection('themes')
+            .where('status', '==', 'active')
+            .orderBy('createdAt', 'desc')
+            .get();
+        
+        customThemes = {};
+        const customThemesGrid = document.getElementById('custom-themes-grid');
+        const noCustomThemes = document.getElementById('no-custom-themes');
+        
+        if (!customThemesGrid) return;
+        
+        customThemesGrid.innerHTML = '';
+        
+        themesSnapshot.forEach(doc => {
+            const themeData = doc.data();
+            customThemes[doc.id] = {
+                id: doc.id,
+                ...themeData
+            };
+            
+            const themeCard = document.createElement('div');
+            themeCard.className = `theme-card ${currentTheme === doc.id ? 'active' : ''}`;
+            themeCard.dataset.themeId = doc.id;
+            themeCard.dataset.themeType = 'custom';
+            
+            const previewContent = themeData.imageUrl ? 
+                `<img src="${themeData.imageUrl}" class="theme-preview-image" alt="${themeData.name}">` :
+                `<div class="theme-example">Imagem Personalizada</div>`;
+            
+            themeCard.innerHTML = `
+                <div class="theme-preview">
+                    ${previewContent}
+                </div>
+                <div class="theme-info">
+                    <h3>${themeData.name}</h3>
+                    <p>${themeData.description || 'Tema personalizado'}</p>
+                    <small>Criado por: ${themeData.creatorName || 'Admin'}</small>
+                </div>
+                ${currentTheme === doc.id ? '<div class="theme-badge"><i class="fas fa-check"></i> Ativo</div>' : ''}
+            `;
+            
+            customThemesGrid.appendChild(themeCard);
+        });
+        
+        // Mostrar/ocultar mensagem de "nenhum tema"
+        if (noCustomThemes) {
+            noCustomThemes.style.display = themesSnapshot.empty ? 'block' : 'none';
+        }
+        
+    } catch (error) {
+        console.error("Erro ao carregar temas personalizados:", error);
+    }
 }
 
 // Inicializar o jogo
@@ -272,10 +343,18 @@ function initializeGame() {
 
 // Criar o tabuleiro
 function createBoard() {
-    if (currentTheme === 'custom-image' && customImageData) {
-        board = [...customImageData];
+    if (selectedThemeId && customThemes[selectedThemeId]) {
+        // Usar tema personalizado
+        const theme = customThemes[selectedThemeId];
+        board = Array(16).fill(null);
+        emptyTileIndex = 15;
+        currentTheme = selectedThemeId;
+    } else if (defaultThemes[currentTheme]) {
+        // Usar tema padrão
+        board = [...defaultThemes[currentTheme].items];
     } else {
-        board = [...themes[currentTheme].items];
+        // Fallback para números
+        board = [...defaultThemes.numbers.items];
     }
 }
 
@@ -285,36 +364,47 @@ function renderBoard() {
     
     board.forEach((value, index) => {
         const tile = document.createElement('div');
-        tile.className = `puzzle-tile ${themes[currentTheme].className}`;
         
-        if (value === null) {
-            tile.classList.add('empty');
-            tile.textContent = '';
-            emptyTileIndex = index;
-        } else {
-            // Verificar se é uma URL de imagem
-            if (typeof value === 'string' && value.startsWith('data:image')) {
+        if (selectedThemeId && customThemes[selectedThemeId]) {
+            // Tema personalizado
+            tile.className = `puzzle-tile image-piece`;
+            if (value === null) {
+                tile.classList.add('empty');
+                emptyTileIndex = index;
+            } else {
                 tile.style.backgroundImage = `url(${value})`;
+                tile.dataset.index = index;
+                tile.dataset.value = value;
+                
+                // Verificar se está na posição correta
+                const correctValue = index === 15 ? null : `piece-${index}`;
+                if (value === correctValue) {
+                    tile.classList.add('correct-position');
+                }
+            }
+        } else {
+            // Tema padrão
+            const themeData = defaultThemes[currentTheme];
+            tile.className = `puzzle-tile ${themeData.className}`;
+            
+            if (value === null) {
+                tile.classList.add('empty');
                 tile.textContent = '';
+                emptyTileIndex = index;
             } else {
                 tile.textContent = value;
+                tile.dataset.index = index;
+                tile.dataset.value = value;
+                
+                // Verificar se a peça está na posição correta
+                const correctValue = themeData.items[index];
+                if (value === correctValue) {
+                    tile.classList.add('correct-position');
+                }
             }
-            
-            tile.dataset.index = index;
-            tile.dataset.value = value;
-            
-            // Verificar se a peça está na posição correta
-            let correctValue;
-            if (currentTheme === 'custom-image' && customImageData) {
-                correctValue = customImageData[index];
-            } else {
-                correctValue = themes[currentTheme].items[index];
-            }
-            
-            if (value === correctValue) {
-                tile.classList.add('correct-position');
-            }
-            
+        }
+        
+        if (value !== null) {
             // Adicionar eventos de drag and drop
             tile.addEventListener('mousedown', startDrag);
             tile.addEventListener('touchstart', startDragTouch);
@@ -549,11 +639,7 @@ function shuffleBoard() {
 // Mostrar a solução
 function showSolution() {
     // Criar tabuleiro ordenado
-    if (currentTheme === 'custom-image' && customImageData) {
-        board = [...customImageData];
-    } else {
-        board = [...themes[currentTheme].items];
-    }
+    createBoard();
     emptyTileIndex = 15;
     renderBoard();
     
@@ -588,14 +674,7 @@ function resetGame() {
 function showHint() {
     // Encontrar a primeira peça fora do lugar que pode ser movida
     for (let i = 0; i < board.length; i++) {
-        let correctValue;
-        if (currentTheme === 'custom-image' && customImageData) {
-            correctValue = customImageData[i];
-        } else {
-            correctValue = themes[currentTheme].items[i];
-        }
-        
-        if (board[i] !== null && board[i] !== correctValue && isMovable(i)) {
+        if (board[i] !== null && isMovable(i)) {
             const tile = document.querySelector(`.puzzle-tile[data-index="${i}"]`);
             tile.style.boxShadow = '0 0 15px 5px gold';
             tile.style.transform = 'scale(1.05)';
@@ -616,15 +695,17 @@ function showHint() {
 // Verificar vitória
 function checkWin() {
     for (let i = 0; i < 15; i++) {
-        let correctValue;
-        if (currentTheme === 'custom-image' && customImageData) {
-            correctValue = customImageData[i];
-        } else {
-            correctValue = themes[currentTheme].items[i];
-        }
-        
-        if (board[i] !== correctValue) {
-            return false;
+        if (board[i] === null) return false;
+        if (selectedThemeId && customThemes[selectedThemeId]) {
+            // Para temas personalizados, verificar se a peça está na posição correta
+            if (board[i] !== `piece-${i}`) {
+                return false;
+            }
+        } else if (defaultThemes[currentTheme]) {
+            // Para temas padrão
+            if (board[i] !== defaultThemes[currentTheme].items[i]) {
+                return false;
+            }
         }
     }
     return board[15] === null;
@@ -667,6 +748,8 @@ async function saveScoreAutomatically() {
             time: timer,
             difficulty: currentDifficulty,
             theme: currentTheme,
+            themeId: selectedThemeId,
+            themeName: getThemeName(currentTheme, selectedThemeId),
             date: firebase.firestore.FieldValue.serverTimestamp()
         };
         
@@ -678,9 +761,24 @@ async function saveScoreAutomatically() {
         // Atualizar estatísticas globais
         loadGlobalStats();
         
+        // Se estiver na seção de progresso, atualizar
+        if (progressSection.classList.contains('active')) {
+            loadUserProgress();
+        }
+        
     } catch (error) {
         console.error("Erro ao salvar pontuação automaticamente:", error);
     }
+}
+
+// Obter nome do tema
+function getThemeName(themeKey, themeId) {
+    if (themeId && customThemes[themeId]) {
+        return customThemes[themeId].name;
+    } else if (defaultThemes[themeKey]) {
+        return defaultThemes[themeKey].name;
+    }
+    return "Desconhecido";
 }
 
 // Atualizar contador de movimentos
@@ -717,64 +815,48 @@ function formatTime(seconds) {
 // Criar tabuleiro de solução
 function createSolutionBoard() {
     const solutionBoard = document.getElementById('solution-board');
+    const imageSolutionPreview = document.getElementById('image-solution-preview');
+    
     if (!solutionBoard) return;
     
     solutionBoard.innerHTML = '';
+    imageSolutionPreview.style.display = 'none';
+    imageSolutionPreview.innerHTML = '';
     
-    // Se o tema for imagem personalizada e houver imagem personalizada
-    if (currentTheme === 'custom-image' && customImageData) {
-        // Criar uma grade 4x4 para exibir a imagem completa
-        for (let i = 0; i < 16; i++) {
-            const tile = document.createElement('div');
-            tile.className = 'solution-tile';
-            if (i < 15 && customImageData[i]) {
-                tile.style.backgroundImage = `url(${customImageData[i]})`;
-                tile.style.backgroundSize = 'cover';
-                tile.style.backgroundPosition = 'center';
-            } else {
-                tile.classList.add('empty');
-            }
-            solutionBoard.appendChild(tile);
-        }
-    } else {
-        // Usar o tema atual para a solução
-        const currentThemeData = themes[currentTheme];
-        if (!currentThemeData) return;
+    if (selectedThemeId && customThemes[selectedThemeId]) {
+        // Mostrar imagem completa para tema personalizado
+        const theme = customThemes[selectedThemeId];
+        imageSolutionPreview.style.display = 'block';
         
-        if (currentThemeData.type === 'custom') {
-            // Para temas personalizados, mostrar a imagem completa
-            for (let i = 0; i < 16; i++) {
-                const tile = document.createElement('div');
-                tile.className = 'solution-tile';
-                if (i < 15 && currentThemeData.items[i]) {
-                    tile.style.backgroundImage = `url(${currentThemeData.items[i]})`;
-                    tile.style.backgroundSize = 'cover';
-                    tile.style.backgroundPosition = 'center';
-                } else {
-                    tile.classList.add('empty');
-                }
-                solutionBoard.appendChild(tile);
-            }
-        } else {
-            // Para temas built-in, mostrar o texto
-            const solutionText = currentThemeData.solutionText;
-            
-            // Dividir o texto da solução em linhas
-            const lines = solutionText.split('\n');
-            
-            lines.forEach(line => {
-                const lineDiv = document.createElement('div');
-                lineDiv.style.gridColumn = '1 / -1';
-                lineDiv.style.display = 'flex';
-                lineDiv.style.justifyContent = 'center';
-                lineDiv.style.alignItems = 'center';
-                lineDiv.style.fontSize = currentTheme === 'numbers' ? '1.1rem' : '1.4rem';
-                lineDiv.style.fontWeight = '700';
-                lineDiv.style.color = 'var(--primary-color)';
-                lineDiv.textContent = line;
-                solutionBoard.appendChild(lineDiv);
-            });
-        }
+        const img = document.createElement('img');
+        img.src = theme.imageUrl;
+        img.alt = theme.name;
+        img.style.maxWidth = '100%';
+        img.style.borderRadius = '6px';
+        
+        imageSolutionPreview.appendChild(img);
+        solutionBoard.style.display = 'none';
+    } else {
+        // Mostrar grade de solução para temas padrão
+        solutionBoard.style.display = 'grid';
+        const themeData = defaultThemes[currentTheme];
+        if (!themeData) return;
+        
+        const solutionText = themeData.solutionText;
+        const lines = solutionText.split('\n');
+        
+        lines.forEach(line => {
+            const lineDiv = document.createElement('div');
+            lineDiv.style.gridColumn = '1 / -1';
+            lineDiv.style.display = 'flex';
+            lineDiv.style.justifyContent = 'center';
+            lineDiv.style.alignItems = 'center';
+            lineDiv.style.fontSize = currentTheme === 'numbers' ? '1.1rem' : '1.4rem';
+            lineDiv.style.fontWeight = '700';
+            lineDiv.style.color = 'var(--primary-color)';
+            lineDiv.textContent = line;
+            solutionBoard.appendChild(lineDiv);
+        });
     }
 }
 
@@ -838,8 +920,8 @@ function setupEventListeners() {
     // Navegação
     const navHome = document.getElementById('nav-home');
     const navGame = document.getElementById('nav-game');
-    const navRanking = document.getElementById('nav-ranking');
     const navProgress = document.getElementById('nav-progress');
+    const navRanking = document.getElementById('nav-ranking');
     const navThemes = document.getElementById('nav-themes');
     const navAdmin = document.getElementById('nav-admin');
     
@@ -848,22 +930,21 @@ function setupEventListeners() {
         showSection('game-section');
         resetGame();
     });
-    if (navRanking) navRanking.addEventListener('click', () => {
-        showSection('ranking-section');
-        loadRanking();
-    });
     if (navProgress) navProgress.addEventListener('click', () => {
         showSection('progress-section');
         loadUserProgress();
     });
+    if (navRanking) navRanking.addEventListener('click', () => {
+        showSection('ranking-section');
+        loadRanking();
+    });
     if (navThemes) navThemes.addEventListener('click', () => {
         showSection('themes-section');
-        renderThemesGrid();
+        loadCustomThemes();
     });
     if (navAdmin) navAdmin.addEventListener('click', () => {
         showSection('admin-section');
         loadAdminUsers();
-        loadCustomThemesForAdmin();
         loadAdminStats();
     });
     
@@ -906,6 +987,11 @@ function setupEventListeners() {
             tab.addEventListener('click', function() {
                 const tabId = this.dataset.tab;
                 switchAdminTab(tabId);
+                if (tabId === 'themes-management-tab') {
+                    loadAdminThemes();
+                } else if (tabId === 'admin-stats-tab') {
+                    loadAdminStats();
+                }
             });
         });
     }
@@ -951,28 +1037,57 @@ function setupEventListeners() {
     if (userSearch) userSearch.addEventListener('input', loadAdminUsers);
     if (clearScoresBtn) clearScoresBtn.addEventListener('click', clearOldScores);
     
-    // Upload de imagem para usuários comuns
-    if (imageUploadForm) {
-        imageUploadForm.addEventListener('submit', handleImageUpload);
+    // Temas
+    if (createCustomThemeBtn) {
+        createCustomThemeBtn.addEventListener('click', () => {
+            if (currentUser && (await checkIfUserIsAdmin(currentUser.uid))) {
+                openThemeEditModal();
+            } else {
+                alert('Apenas administradores podem criar temas personalizados.');
+            }
+        });
     }
     
-    if (useImageBtn) {
-        useImageBtn.addEventListener('click', useCustomImage);
+    if (manageThemesBtn) {
+        manageThemesBtn.addEventListener('click', () => {
+            showSection('admin-section');
+            switchAdminTab('themes-management-tab');
+        });
     }
     
-    // Upload de imagem para admin (temas personalizados)
-    if (customThemeImageInput) {
-        customThemeImageInput.addEventListener('change', handleCustomThemeImageUpload);
+    // Event delegation para cards de tema
+    document.addEventListener('click', function(e) {
+        const themeCard = e.target.closest('.theme-card');
+        if (themeCard) {
+            const themeId = themeCard.dataset.themeId;
+            const themeType = themeCard.dataset.themeType;
+            
+            if (themeType === 'default') {
+                changeTheme(themeId);
+            } else if (themeType === 'custom') {
+                selectCustomTheme(themeId);
+            }
+        }
+    });
+    
+    // Formulário de edição de tema
+    if (themeEditForm) {
+        themeEditForm.addEventListener('submit', handleThemeSave);
     }
     
-    if (customThemeForm) {
-        customThemeForm.addEventListener('submit', handleCustomThemeSubmit);
+    const themeImageInput = document.getElementById('theme-image');
+    if (themeImageInput) {
+        themeImageInput.addEventListener('change', previewThemeImage);
     }
     
-    // Botão para criar tema (admin)
-    if (createThemeAdminBtn) {
-        createThemeAdminBtn.addEventListener('click', () => {
-            openCustomThemeModal();
+    // Modal de confirmação
+    if (confirmActionBtn) {
+        confirmActionBtn.addEventListener('click', handleConfirmAction);
+    }
+    
+    if (cancelActionBtn) {
+        cancelActionBtn.addEventListener('click', () => {
+            confirmationModal.style.display = 'none';
         });
     }
     
@@ -1029,12 +1144,11 @@ function showSection(sectionId) {
     } else if (sectionId === 'game-section') {
         document.getElementById('nav-game').classList.add('active');
         // Atualizar o nome do tema atual
-        const themeName = themes[currentTheme] ? themes[currentTheme].name : 'Desconhecido';
-        document.getElementById('current-theme').textContent = themeName;
-    } else if (sectionId === 'ranking-section') {
-        document.getElementById('nav-ranking').classList.add('active');
+        document.getElementById('current-theme').textContent = getThemeName(currentTheme, selectedThemeId);
     } else if (sectionId === 'progress-section') {
         document.getElementById('nav-progress').classList.add('active');
+    } else if (sectionId === 'ranking-section') {
+        document.getElementById('nav-ranking').classList.add('active');
     } else if (sectionId === 'themes-section') {
         document.getElementById('nav-themes').classList.add('active');
     } else if (sectionId === 'admin-section') {
@@ -1105,39 +1219,35 @@ function showInstructionsModal() {
 function checkAuthState() {
     if (!auth) return;
     
-    // Configurar persistência (lembrar-me)
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-        .then(() => {
-            return auth.onAuthStateChanged(async (user) => {
-                if (user && !isGuest) {
-                    // Usuário está logado (não é visitante)
-                    currentUser = user;
-                    isGuest = false;
-                    
-                    console.log("Usuário logado:", user.email);
-                    
-                    // Atualizar interface para usuário logado
-                    updateUIForLoggedInUser(user);
-                    
-                    // Verificar se o usuário é administrador
-                    isAdmin = await checkIfUserIsAdmin(user.uid);
-                    updateUIForAdmin(isAdmin);
-                    
-                    // Carregar dados do usuário
-                    await loadUserData(user.uid);
-                } else if (!isGuest) {
-                    // Usuário não está logado e não é visitante
-                    currentUser = null;
-                    isAdmin = false;
-                    
-                    // Atualizar interface para usuário não logado
-                    updateUIForLoggedOutUser();
-                }
-            });
-        })
-        .catch((error) => {
-            console.error("Erro ao configurar persistência:", error);
-        });
+    auth.onAuthStateChanged(async (user) => {
+        if (user && !isGuest) {
+            // Usuário está logado (não é visitante)
+            currentUser = user;
+            isGuest = false;
+            
+            console.log("Usuário logado:", user.email);
+            
+            // Atualizar interface para usuário logado
+            updateUIForLoggedInUser(user);
+            
+            // Verificar se o usuário é administrador
+            const isAdmin = await checkIfUserIsAdmin(user.uid);
+            updateUIForAdmin(isAdmin);
+            
+            // Carregar dados do usuário
+            await loadUserData(user.uid);
+            
+            // Carregar temas personalizados
+            loadCustomThemes();
+            
+        } else if (!isGuest) {
+            // Usuário não está logado e não é visitante
+            currentUser = null;
+            
+            // Atualizar interface para usuário não logado
+            updateUIForLoggedOutUser();
+        }
+    });
 }
 
 // Atualizar UI para usuário logado
@@ -1161,6 +1271,9 @@ function updateUIForLoggedOutUser() {
     
     // Esconder link para admin
     if (adminNavItem) adminNavItem.style.display = 'none';
+    
+    // Esconder botão de gerenciar temas
+    if (manageThemesBtn) manageThemesBtn.style.display = 'none';
 }
 
 // Verificar se o usuário é administrador
@@ -1179,22 +1292,17 @@ async function checkIfUserIsAdmin(uid) {
 }
 
 // Atualizar UI para administrador
-function updateUIForAdmin(isAdminUser) {
-    isAdmin = isAdminUser;
+function updateUIForAdmin(isAdmin) {
     if (adminNavItem) {
         adminNavItem.style.display = isAdmin ? 'block' : 'none';
     }
     
-    // Mostrar/ocultar informações de admin na seção de temas
-    const adminThemeInfo = document.getElementById('admin-theme-info');
-    const createThemeBtn = document.getElementById('create-theme-admin-btn');
-    
-    if (adminThemeInfo) {
-        adminThemeInfo.style.display = isAdmin ? 'block' : 'none';
+    if (manageThemesBtn) {
+        manageThemesBtn.style.display = isAdmin ? 'block' : 'none';
     }
     
-    if (createThemeBtn) {
-        createThemeBtn.style.display = isAdmin ? 'inline-block' : 'none';
+    if (createCustomThemeBtn) {
+        createCustomThemeBtn.style.display = isAdmin ? 'block' : 'none';
     }
 }
 
@@ -1245,7 +1353,8 @@ async function handleLogin(e) {
     
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-    const rememberMe = document.getElementById('remember-me').checked;
+    const rememberMeCheckbox = document.getElementById('remember-me');
+    rememberMe = rememberMeCheckbox ? rememberMeCheckbox.checked : false;
     const messageElement = document.getElementById('login-message');
     
     // Validar entrada
@@ -1257,7 +1366,7 @@ async function handleLogin(e) {
     try {
         showFormMessage(messageElement, 'Entrando...', 'info');
         
-        // Configurar persistência baseada na opção "Lembrar-me"
+        // Configurar persistência baseada na escolha do usuário
         const persistence = rememberMe ? 
             firebase.auth.Auth.Persistence.LOCAL : 
             firebase.auth.Auth.Persistence.SESSION;
@@ -1358,15 +1467,12 @@ async function handleRegister(e) {
             displayName: name
         });
         
-        // Determinar a função do usuário (sempre player para registro normal)
-        const userRole = 'player';
-        
         // Criar documento do usuário no Firestore
         const userData = {
             uid: user.uid,
             email: email,
             name: name,
-            role: userRole,
+            role: 'player',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
@@ -1474,7 +1580,13 @@ async function handleLogout() {
         // Redirecionar para a página inicial
         showSection('home-section');
         isGuest = false;
-        isAdmin = false;
+        
+        // Resetar tema para padrão
+        selectedThemeId = null;
+        currentTheme = 'numbers';
+        createBoard();
+        renderBoard();
+        createSolutionBoard();
         
     } catch (error) {
         console.error("Erro ao fazer logout:", error);
@@ -1500,35 +1612,23 @@ function clearFormMessage(element) {
     element.style.display = 'none';
 }
 
-// Mudar tema
-function changeTheme(themeId) {
-    if (!themes[themeId]) return;
+// Mudar tema padrão
+function changeTheme(themeKey) {
+    if (!defaultThemes[themeKey]) return;
     
     // Atualizar cards de tema
-    const themeCards = document.querySelectorAll('.theme-card');
-    themeCards.forEach(card => {
+    document.querySelectorAll('.theme-card').forEach(card => {
         card.classList.remove('active');
-        if (card.dataset.theme === themeId) {
+        if (card.dataset.themeId === themeKey) {
             card.classList.add('active');
         }
     });
     
-    currentTheme = themeId;
+    selectedThemeId = null;
+    currentTheme = themeKey;
     
     // Atualizar nome do tema na interface
-    document.getElementById('current-theme').textContent = themes[themeId].name;
-    
-    // Se for um tema temporário de imagem personalizada, usar a imagem temporária
-    if (themeId === 'custom-image' && temporaryCustomImage) {
-        customImageData = temporaryCustomImage;
-    } else if (themes[themeId].type === 'custom') {
-        // Se for um tema personalizado salvo, usar os dados do tema
-        customImageData = themes[themeId].items;
-    } else {
-        // Para outros temas, limpar a imagem personalizada
-        customImageData = null;
-        temporaryCustomImage = null;
-    }
+    document.getElementById('current-theme').textContent = defaultThemes[themeKey].name;
     
     // Recriar o tabuleiro com o novo tema
     createBoard();
@@ -1541,43 +1641,140 @@ function changeTheme(themeId) {
     }
 }
 
-// Manipular upload de imagem para usuários comuns
-function handleImageUpload(e) {
-    e.preventDefault();
+// Selecionar tema personalizado
+function selectCustomTheme(themeId) {
+    if (!customThemes[themeId]) return;
     
-    const file = imageFileInput.files[0];
-    const messageElement = document.getElementById('image-upload-message');
-    const previewBoard = document.getElementById('image-preview-board');
+    // Atualizar cards de tema
+    document.querySelectorAll('.theme-card').forEach(card => {
+        card.classList.remove('active');
+        if (card.dataset.themeId === themeId) {
+            card.classList.add('active');
+        }
+    });
+    
+    selectedThemeId = themeId;
+    
+    // Atualizar nome do tema na interface
+    document.getElementById('current-theme').textContent = customThemes[themeId].name;
+    
+    // Recriar o tabuleiro com o novo tema
+    createBoard();
+    renderBoard();
+    createSolutionBoard();
+    
+    // Se estiver na seção de temas, voltar para o jogo
+    if (themesSection.classList.contains('active')) {
+        showSection('game-section');
+    }
+}
+
+// Abrir modal de edição de tema
+function openThemeEditModal(themeId = null) {
+    const modalTitle = document.getElementById('theme-modal-title');
+    const themeIdInput = document.getElementById('theme-id');
+    const themeNameInput = document.getElementById('theme-name');
+    const themeDescriptionInput = document.getElementById('theme-description');
+    const themeImageInput = document.getElementById('theme-image');
+    const themePreviewContainer = document.getElementById('theme-preview-container');
+    
+    if (themeId && customThemes[themeId]) {
+        // Modo edição
+        const theme = customThemes[themeId];
+        modalTitle.innerHTML = '<i class="fas fa-edit"></i> Editar Tema';
+        themeIdInput.value = themeId;
+        themeNameInput.value = theme.name;
+        themeDescriptionInput.value = theme.description || '';
+        themeImageInput.required = false;
+        themePreviewContainer.style.display = 'none';
+    } else {
+        // Modo criação
+        modalTitle.innerHTML = '<i class="fas fa-palette"></i> Criar Tema Personalizado';
+        themeIdInput.value = '';
+        themeNameInput.value = '';
+        themeDescriptionInput.value = '';
+        themeImageInput.required = true;
+        themePreviewContainer.style.display = 'none';
+    }
+    
+    themeEditModal.style.display = 'flex';
+    clearFormMessage(document.getElementById('theme-edit-message'));
+}
+
+// Pré-visualizar imagem do tema
+function previewThemeImage() {
+    const file = document.getElementById('theme-image').files[0];
+    const previewContainer = document.getElementById('theme-preview-container');
+    const previewGrid = document.getElementById('theme-preview-grid');
     
     if (!file) {
-        showFormMessage(messageElement, 'Por favor, selecione uma imagem.', 'error');
+        previewContainer.style.display = 'none';
         return;
     }
     
     // Verificar se é uma imagem
     if (!file.type.match('image.*')) {
-        showFormMessage(messageElement, 'Por favor, selecione um arquivo de imagem.', 'error');
+        alert('Por favor, selecione um arquivo de imagem.');
         return;
     }
-    
-    showFormMessage(messageElement, 'Processando imagem...', 'info');
     
     const reader = new FileReader();
     
     reader.onload = function(event) {
         const img = new Image();
         img.onload = function() {
-            // Processar a imagem
-            processImageForPreview(img, previewBoard, false);
+            // Criar um canvas para dividir a imagem
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Tamanho de cada peça (dividir em 4x4)
+            const pieceWidth = img.width / 4;
+            const pieceHeight = img.height / 4;
+            
+            // Limpar preview grid
+            previewGrid.innerHTML = '';
+            
+            // Gerar as 16 peças
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    // Criar canvas para cada peça
+                    const pieceCanvas = document.createElement('canvas');
+                    pieceCanvas.width = pieceWidth;
+                    pieceCanvas.height = pieceHeight;
+                    const pieceCtx = pieceCanvas.getContext('2d');
+                    
+                    // Desenhar a parte da imagem no canvas da peça
+                    pieceCtx.drawImage(
+                        img,
+                        col * pieceWidth,
+                        row * pieceHeight,
+                        pieceWidth,
+                        pieceHeight,
+                        0, 0,
+                        pieceWidth,
+                        pieceHeight
+                    );
+                    
+                    // Converter para data URL
+                    const dataUrl = pieceCanvas.toDataURL('image/png');
+                    
+                    // Criar elemento de pré-visualização
+                    const pieceElement = document.createElement('div');
+                    pieceElement.className = 'theme-preview-piece';
+                    pieceElement.style.backgroundImage = `url(${dataUrl})`;
+                    
+                    // Se for a última peça (vazia), deixar com fundo cinza
+                    if (row === 3 && col === 3) {
+                        pieceElement.style.backgroundColor = 'var(--gray-light)';
+                        pieceElement.style.backgroundImage = 'none';
+                    }
+                    
+                    previewGrid.appendChild(pieceElement);
+                }
+            }
             
             // Mostrar preview
-            imagePreviewContainer.style.display = 'block';
-            
-            showFormMessage(messageElement, 'Imagem processada com sucesso! Clique em "Usar Esta Imagem" para aplicar.', 'success');
-        };
-        
-        img.onerror = function() {
-            showFormMessage(messageElement, 'Erro ao carregar a imagem. Tente novamente.', 'error');
+            previewContainer.style.display = 'block';
         };
         
         img.src = event.target.result;
@@ -1586,88 +1783,269 @@ function handleImageUpload(e) {
     reader.readAsDataURL(file);
 }
 
-// Processar imagem para preview
-function processImageForPreview(img, previewBoard, isForAdmin = false) {
-    // Criar um canvas para dividir a imagem
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+// Salvar tema personalizado
+async function handleThemeSave(e) {
+    e.preventDefault();
     
-    // Tamanho de cada peça (dividir em 4x4)
-    const pieceWidth = img.width / 4;
-    const pieceHeight = img.height / 4;
+    const themeId = document.getElementById('theme-id').value;
+    const themeName = document.getElementById('theme-name').value;
+    const themeDescription = document.getElementById('theme-description').value;
+    const themeImageFile = document.getElementById('theme-image').files[0];
+    const messageElement = document.getElementById('theme-edit-message');
     
-    // Limpar preview board
-    previewBoard.innerHTML = '';
-    
-    // Array para armazenar as partes da imagem
-    const imagePieces = [];
-    
-    // Gerar as 16 peças (15 visíveis + 1 vazia)
-    for (let row = 0; row < 4; row++) {
-        for (let col = 0; col < 4; col++) {
-            // Criar canvas para cada peça
-            const pieceCanvas = document.createElement('canvas');
-            pieceCanvas.width = pieceWidth;
-            pieceCanvas.height = pieceHeight;
-            const pieceCtx = pieceCanvas.getContext('2d');
-            
-            // Desenhar a parte da imagem no canvas da peça
-            pieceCtx.drawImage(
-                img,
-                col * pieceWidth,
-                row * pieceHeight,
-                pieceWidth,
-                pieceHeight,
-                0, 0,
-                pieceWidth,
-                pieceHeight
-            );
-            
-            // Converter para data URL
-            const dataUrl = pieceCanvas.toDataURL('image/png');
-            
-            // Adicionar ao array (a última peça será null para o espaço vazio)
-            if (row === 3 && col === 3) {
-                imagePieces.push(null);
-            } else {
-                imagePieces.push(dataUrl);
-                
-                // Criar elemento de pré-visualização
-                const pieceElement = document.createElement('div');
-                pieceElement.className = 'puzzle-tile image-piece';
-                pieceElement.style.backgroundImage = `url(${dataUrl})`;
-                previewBoard.appendChild(pieceElement);
-            }
-        }
-    }
-    
-    // Armazenar os dados da imagem
-    if (isForAdmin) {
-        // Para admin, armazenar temporariamente para preview
-        window.tempCustomThemeData = imagePieces;
-    } else {
-        // Para usuários comuns, armazenar como imagem temporária
-        temporaryCustomImage = imagePieces;
-    }
-}
-
-// Usar imagem personalizada (usuários comuns)
-function useCustomImage() {
-    if (!temporaryCustomImage) {
-        alert('Por favor, faça upload de uma imagem primeiro.');
+    // Validar entrada
+    if (!themeName) {
+        showFormMessage(messageElement, 'Por favor, insira um nome para o tema.', 'error');
         return;
     }
     
-    // Fechar modal
-    imageUploadModal.style.display = 'none';
+    // Para criação, é necessária uma imagem
+    if (!themeId && !themeImageFile) {
+        showFormMessage(messageElement, 'Por favor, selecione uma imagem para o tema.', 'error');
+        return;
+    }
     
-    // Mudar para o tema de imagem personalizada
-    changeTheme('custom-image');
+    try {
+        showFormMessage(messageElement, 'Salvando tema...', 'info');
+        
+        let imageUrl = '';
+        
+        // Se houver uma nova imagem, processá-la
+        if (themeImageFile) {
+            const imageData = await processImageForTheme(themeImageFile);
+            imageUrl = imageData.fullImage;
+        } else if (themeId && customThemes[themeId]) {
+            // Usar imagem existente
+            imageUrl = customThemes[themeId].imageUrl;
+        }
+        
+        // Preparar dados do tema
+        const themeData = {
+            name: themeName,
+            description: themeDescription,
+            imageUrl: imageUrl,
+            status: 'active',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        // Se for um novo tema, adicionar informações adicionais
+        if (!themeId) {
+            themeData.creatorId = currentUser.uid;
+            themeData.creatorName = currentUser.displayName || currentUser.email.split('@')[0];
+            themeData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        }
+        
+        // Salvar no Firestore
+        if (themeId) {
+            // Atualizar tema existente
+            await db.collection('themes').doc(themeId).update(themeData);
+        } else {
+            // Criar novo tema
+            const docRef = await db.collection('themes').add(themeData);
+            themeData.id = docRef.id;
+        }
+        
+        showFormMessage(messageElement, 'Tema salvo com sucesso!', 'success');
+        
+        // Fechar modal após 1.5 segundos
+        setTimeout(() => {
+            themeEditModal.style.display = 'none';
+            clearFormMessage(messageElement);
+            
+            // Recarregar temas
+            loadCustomThemes();
+            
+            // Se estiver na aba de administração de temas, recarregar
+            if (document.getElementById('themes-management-tab').classList.contains('active')) {
+                loadAdminThemes();
+            }
+        }, 1500);
+        
+    } catch (error) {
+        console.error("Erro ao salvar tema:", error);
+        showFormMessage(messageElement, 'Erro ao salvar tema. Tente novamente.', 'error');
+    }
+}
+
+// Processar imagem para tema
+async function processImageForTheme(imageFile) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                // Criar um canvas para a imagem completa
+                const fullCanvas = document.createElement('canvas');
+                fullCanvas.width = 400;
+                fullCanvas.height = 400;
+                const fullCtx = fullCanvas.getContext('2d');
+                
+                // Desenhar a imagem redimensionada
+                fullCtx.drawImage(img, 0, 0, 400, 400);
+                
+                // Converter para data URL
+                const fullImageUrl = fullCanvas.toDataURL('image/jpeg', 0.8);
+                
+                resolve({
+                    fullImage: fullImageUrl
+                });
+            };
+            
+            img.src = event.target.result;
+        };
+        
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+    });
+}
+
+// Carregar temas na administração
+async function loadAdminThemes() {
+    const loadingElement = document.getElementById('admin-themes-loading');
+    const themesListElement = document.getElementById('admin-themes-list');
     
-    // Limpar formulário
-    imageUploadForm.reset();
-    imagePreviewContainer.style.display = 'none';
-    clearFormMessage(document.getElementById('image-upload-message'));
+    if (!currentUser) return;
+    
+    // Verificar se o usuário atual é administrador
+    const isAdmin = await checkIfUserIsAdmin(currentUser.uid);
+    if (!isAdmin) {
+        if (themesListElement) {
+            themesListElement.innerHTML = '<p class="error-message">Acesso negado. Apenas administradores podem acessar esta área.</p>';
+        }
+        return;
+    }
+    
+    if (loadingElement) loadingElement.style.display = 'flex';
+    if (themesListElement) themesListElement.innerHTML = '';
+    
+    try {
+        // Carregar todos os temas
+        const themesSnapshot = await db.collection('themes').orderBy('createdAt', 'desc').get();
+        
+        if (themesSnapshot.empty) {
+            themesListElement.innerHTML = '<p class="no-themes-message">Nenhum tema personalizado criado ainda.</p>';
+            return;
+        }
+        
+        themesSnapshot.forEach(doc => {
+            const themeData = doc.data();
+            const themeItem = document.createElement('div');
+            themeItem.className = 'admin-theme-item';
+            
+            const previewContent = themeData.imageUrl ? 
+                `<img src="${themeData.imageUrl}" alt="${themeData.name}">` :
+                '<div class="theme-example">Sem imagem</div>';
+            
+            const statusBadge = themeData.status === 'active' ? 
+                '<span class="user-status active">Ativo</span>' : 
+                '<span class="user-status suspended">Inativo</span>';
+            
+            themeItem.innerHTML = `
+                <div class="admin-theme-preview">
+                    ${previewContent}
+                </div>
+                <div class="admin-theme-info">
+                    <h4>${themeData.name}</h4>
+                    <p>${themeData.description || 'Sem descrição'}</p>
+                    <div class="admin-theme-stats">
+                        <span>Criado por: ${themeData.creatorName || 'Admin'}</span>
+                        ${statusBadge}
+                    </div>
+                </div>
+                <div class="admin-theme-actions">
+                    <button class="btn btn-secondary btn-icon edit-theme-btn" data-theme-id="${doc.id}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-icon delete-theme-btn" data-theme-id="${doc.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            
+            themesListElement.appendChild(themeItem);
+        });
+        
+        // Adicionar event listeners aos botões
+        const editButtons = document.querySelectorAll('.edit-theme-btn');
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const themeId = this.dataset.themeId;
+                openThemeEditModal(themeId);
+            });
+        });
+        
+        const deleteButtons = document.querySelectorAll('.delete-theme-btn');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const themeId = this.dataset.themeId;
+                confirmDeleteTheme(themeId);
+            });
+        });
+        
+    } catch (error) {
+        console.error("Erro ao carregar temas:", error);
+        if (themesListElement) {
+            themesListElement.innerHTML = '<p class="error-message">Erro ao carregar temas. Tente novamente.</p>';
+        }
+    } finally {
+        if (loadingElement) loadingElement.style.display = 'none';
+    }
+}
+
+// Confirmar exclusão de tema
+function confirmDeleteTheme(themeId) {
+    if (!themeId || !customThemes[themeId]) return;
+    
+    const theme = customThemes[themeId];
+    const messageElement = document.getElementById('confirmation-message');
+    
+    messageElement.textContent = `Tem certeza que deseja excluir o tema "${theme.name}"? Esta ação não pode ser desfeita.`;
+    
+    confirmationModal.style.display = 'flex';
+    
+    // Configurar ação de confirmação
+    confirmActionBtn.onclick = async () => {
+        await deleteTheme(themeId);
+        confirmationModal.style.display = 'none';
+    };
+}
+
+// Excluir tema
+async function deleteTheme(themeId) {
+    try {
+        // Atualizar status para "deleted" em vez de excluir completamente
+        await db.collection('themes').doc(themeId).update({
+            status: 'deleted',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Recarregar temas
+        loadCustomThemes();
+        loadAdminThemes();
+        
+        // Se o tema excluído estava selecionado, voltar para tema padrão
+        if (selectedThemeId === themeId) {
+            selectedThemeId = null;
+            currentTheme = 'numbers';
+            createBoard();
+            renderBoard();
+            createSolutionBoard();
+            document.getElementById('current-theme').textContent = 'Números';
+        }
+        
+        alert('Tema excluído com sucesso!');
+        
+    } catch (error) {
+        console.error("Erro ao excluir tema:", error);
+        alert('Erro ao excluir tema. Tente novamente.');
+    }
+}
+
+// Manipular ação de confirmação
+async function handleConfirmAction() {
+    // Esta função é preenchida dinamicamente por outras funções
+    console.log("Ação confirmada");
 }
 
 // Carregar ranking
@@ -1697,7 +2075,12 @@ async function loadRanking() {
         
         // Aplicar filtro de tema
         if (theme !== 'all') {
-            query = query.where('theme', '==', theme);
+            if (theme === 'custom') {
+                // Filtrar por temas personalizados
+                query = query.where('themeId', '!=', null);
+            } else {
+                query = query.where('theme', '==', theme);
+            }
         }
         
         // Aplicar filtro de período
@@ -1771,7 +2154,7 @@ async function loadRanking() {
                     </div>
                     <div class="ranking-user">
                         <div class="ranking-name">${score.userName}</div>
-                        <div class="ranking-email">${formattedDate} • ${getDifficultyText(score.difficulty)} • ${themes[score.theme]?.name || score.theme}</div>
+                        <div class="ranking-email">${formattedDate} • ${getDifficultyText(score.difficulty)} • ${score.themeName || score.theme}</div>
                     </div>
                     <div class="ranking-score">
                         <div class="ranking-moves">
@@ -1833,7 +2216,7 @@ async function loadGlobalStats() {
         document.getElementById('avg-time-global').textContent = formatTime(avgTime);
         
         // Carregar total de jogadores
-        const usersSnapshot = await db.collection('users').get();
+        const usersSnapshot = await db.collection('users').where('status', '==', 'active').get();
         const totalPlayers = usersSnapshot.size;
         document.getElementById('total-players').textContent = totalPlayers;
         
@@ -1845,177 +2228,128 @@ async function loadGlobalStats() {
 // Carregar progresso do usuário
 async function loadUserProgress() {
     if (!currentUser) {
-        // Se não estiver logado, mostrar mensagem
-        const progressContainer = document.querySelector('.progress-container');
-        if (progressContainer) {
-            progressContainer.innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <i class="fas fa-user-lock" style="font-size: 3rem; color: var(--gray); margin-bottom: 20px;"></i>
-                    <h3 style="color: var(--primary-color); margin-bottom: 10px;">Faça login para ver seu progresso</h3>
-                    <p style="color: var(--gray-dark); margin-bottom: 20px;">Acesse sua conta para visualizar suas estatísticas e gráficos de desempenho.</p>
-                    <button id="login-from-progress" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt"></i> Fazer Login
-                    </button>
-                </div>
-            `;
-            
-            // Adicionar event listener ao botão de login
-            document.getElementById('login-from-progress').addEventListener('click', showLoginModal);
-        }
+        // Redirecionar para login se não estiver logado
+        showSection('home-section');
+        showLoginModal();
         return;
     }
     
     try {
-        // Carregar pontuações do usuário
-        const snapshot = await db.collection('scores')
+        // Carregar estatísticas do usuário
+        const scoresSnapshot = await db.collection('scores')
             .where('userId', '==', currentUser.uid)
             .orderBy('date', 'desc')
-            .limit(50)
             .get();
         
-        const scores = [];
-        snapshot.forEach(doc => {
+        const totalGames = scoresSnapshot.size;
+        let totalMoves = 0;
+        let totalTime = 0;
+        let bestScore = Infinity;
+        
+        const gamesByDifficulty = { easy: 0, normal: 0, hard: 0 };
+        const gamesByTheme = {};
+        
+        const recentGames = [];
+        
+        scoresSnapshot.forEach(doc => {
             const data = doc.data();
-            scores.push({
-                id: doc.id,
-                ...data,
-                date: data.date && data.date.toDate ? data.date.toDate() : new Date()
-            });
+            
+            // Estatísticas gerais
+            totalMoves += data.moves;
+            totalTime += data.time;
+            
+            // Melhor pontuação (menos movimentos)
+            if (data.moves < bestScore) {
+                bestScore = data.moves;
+            }
+            
+            // Estatísticas por dificuldade
+            gamesByDifficulty[data.difficulty] = (gamesByDifficulty[data.difficulty] || 0) + 1;
+            
+            // Estatísticas por tema
+            const themeName = data.themeName || data.theme;
+            gamesByTheme[themeName] = (gamesByTheme[themeName] || 0) + 1;
+            
+            // Jogos recentes (últimos 5)
+            if (recentGames.length < 5) {
+                recentGames.push({
+                    theme: themeName,
+                    difficulty: data.difficulty,
+                    moves: data.moves,
+                    time: data.time,
+                    date: data.date && data.date.toDate ? data.date.toDate() : new Date()
+                });
+            }
         });
         
-        // Atualizar estatísticas
-        const totalGames = scores.length;
-        document.getElementById('total-games-user').textContent = totalGames;
+        // Atualizar estatísticas na interface
+        document.getElementById('user-total-games').textContent = totalGames;
+        document.getElementById('user-total-moves').textContent = totalMoves;
+        document.getElementById('user-total-time').textContent = formatTime(totalTime);
+        document.getElementById('user-best-score').textContent = bestScore === Infinity ? 0 : bestScore;
         
-        if (totalGames > 0) {
-            let bestMoves = Infinity;
-            let bestTime = Infinity;
-            let totalMoves = 0;
-            let totalTime = 0;
-            
-            scores.forEach(score => {
-                if (score.moves < bestMoves) bestMoves = score.moves;
-                if (score.time < bestTime) bestTime = score.time;
-                totalMoves += score.moves;
-                totalTime += score.time;
-            });
-            
-            document.getElementById('best-moves').textContent = bestMoves === Infinity ? 0 : bestMoves;
-            document.getElementById('best-time').textContent = bestTime === Infinity ? '00:00' : formatTime(bestTime);
-            document.getElementById('avg-moves-user').textContent = Math.round(totalMoves / totalGames);
-            
-            // Atualizar lista de pontuações recentes
-            const userScoresList = document.getElementById('user-scores-list');
-            if (userScoresList) {
-                userScoresList.innerHTML = '';
-                
-                if (scores.length === 0) {
-                    userScoresList.innerHTML = '<p class="no-scores">Nenhuma pontuação encontrada.</p>';
-                } else {
-                    scores.slice(0, 10).forEach(score => {
-                        const scoreItem = document.createElement('div');
-                        scoreItem.className = 'score-item';
-                        
-                        const date = score.date;
-                        const formattedDate = date.toLocaleDateString('pt-BR');
-                        const formattedTime = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                        
-                        scoreItem.innerHTML = `
-                            <div class="score-date">${formattedDate} ${formattedTime}</div>
-                            <div class="score-info">
-                                <span class="score-user">${score.userName}</span>
-                                <span class="score-difficulty">${getDifficultyText(score.difficulty)} • ${themes[score.theme]?.name || score.theme}</span>
-                            </div>
-                            <div class="score-details">
-                                <span>${score.moves} movimentos</span>
-                                <span>${formatTime(score.time)}</span>
-                            </div>
-                        `;
-                        
-                        userScoresList.appendChild(scoreItem);
-                    });
-                }
-            }
-            
-            // Criar gráficos
-            createUserCharts(scores);
-        } else {
-            // Se não houver pontuações
-            document.getElementById('total-games-user').textContent = '0';
-            document.getElementById('best-moves').textContent = '0';
-            document.getElementById('best-time').textContent = '00:00';
-            document.getElementById('avg-moves-user').textContent = '0';
-            
-            const userScoresList = document.getElementById('user-scores-list');
-            if (userScoresList) {
-                userScoresList.innerHTML = '<p class="no-scores">Nenhuma pontuação encontrada. Jogue algumas partidas para ver seu progresso!</p>';
-            }
-            
-            // Limpar gráficos
-            const difficultyChartCanvas = document.getElementById('difficulty-chart');
-            const themeChartCanvas = document.getElementById('theme-chart');
-            
-            if (difficultyChartCanvas) {
-                difficultyChartCanvas.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 20px;">Sem dados para exibir</p>';
-            }
-            
-            if (themeChartCanvas) {
-                themeChartCanvas.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 20px;">Sem dados para exibir</p>';
-            }
-        }
+        // Atualizar lista de jogos recentes
+        updateRecentGamesList(recentGames);
+        
+        // Criar gráficos
+        createProgressCharts(gamesByDifficulty, gamesByTheme);
         
     } catch (error) {
         console.error("Erro ao carregar progresso do usuário:", error);
     }
 }
 
-// Criar gráficos para o usuário
-function createUserCharts(scores) {
-    // Dados para o gráfico por dificuldade
-    const difficultyData = {
-        easy: { count: 0, moves: 0 },
-        normal: { count: 0, moves: 0 },
-        hard: { count: 0, moves: 0 }
-    };
+// Atualizar lista de jogos recentes
+function updateRecentGamesList(games) {
+    const gamesListElement = document.getElementById('recent-games-list');
+    if (!gamesListElement) return;
     
-    // Dados para o gráfico por tema
-    const themeData = {};
+    gamesListElement.innerHTML = '';
     
-    scores.forEach(score => {
-        // Dificuldade
-        if (difficultyData[score.difficulty]) {
-            difficultyData[score.difficulty].count++;
-            difficultyData[score.difficulty].moves += score.moves;
-        }
+    if (games.length === 0) {
+        gamesListElement.innerHTML = '<p class="no-games">Nenhum jogo encontrado.</p>';
+        return;
+    }
+    
+    games.forEach(game => {
+        const gameItem = document.createElement('div');
+        gameItem.className = 'game-item';
         
-        // Tema
-        const themeName = themes[score.theme]?.name || score.theme;
-        if (!themeData[themeName]) {
-            themeData[themeName] = { count: 0, moves: 0 };
-        }
-        themeData[themeName].count++;
-        themeData[themeName].moves += score.moves;
+        const formattedDate = game.date.toLocaleDateString('pt-BR');
+        const formattedTime = formatTime(game.time);
+        
+        gameItem.innerHTML = `
+            <div class="game-info-small">
+                <div class="game-theme">${game.theme}</div>
+                <div class="game-details">${getDifficultyText(game.difficulty)} • ${formattedDate}</div>
+            </div>
+            <div class="game-score">
+                <div class="game-moves">${game.moves} movimentos</div>
+                <div class="game-time">${formattedTime}</div>
+            </div>
+        `;
+        
+        gamesListElement.appendChild(gameItem);
     });
-    
-    // Gráfico por dificuldade
+}
+
+// Criar gráficos de progresso
+function createProgressCharts(difficultyData, themeData) {
+    // Gráfico de desempenho por dificuldade
     const difficultyCtx = document.getElementById('difficulty-chart').getContext('2d');
     
     // Destruir gráfico anterior se existir
-    if (window.difficultyChartInstance) {
-        window.difficultyChartInstance.destroy();
+    if (progressCharts.difficultyChart) {
+        progressCharts.difficultyChart.destroy();
     }
     
-    window.difficultyChartInstance = new Chart(difficultyCtx, {
+    progressCharts.difficultyChart = new Chart(difficultyCtx, {
         type: 'bar',
         data: {
             labels: ['Fácil', 'Normal', 'Difícil'],
             datasets: [{
-                label: 'Média de Movimentos',
-                data: [
-                    difficultyData.easy.count > 0 ? Math.round(difficultyData.easy.moves / difficultyData.easy.count) : 0,
-                    difficultyData.normal.count > 0 ? Math.round(difficultyData.normal.moves / difficultyData.normal.count) : 0,
-                    difficultyData.hard.count > 0 ? Math.round(difficultyData.hard.moves / difficultyData.hard.count) : 0
-                ],
+                label: 'Jogos Concluídos',
+                data: [difficultyData.easy || 0, difficultyData.normal || 0, difficultyData.hard || 0],
                 backgroundColor: [
                     'rgba(39, 174, 96, 0.7)',
                     'rgba(44, 62, 80, 0.7)',
@@ -2034,600 +2368,49 @@ function createUserCharts(scores) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Movimentos'
+                    ticks: {
+                        stepSize: 1
                     }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Dificuldade'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
                 }
             }
         }
     });
     
-    // Gráfico por tema
+    // Gráfico de distribuição por tema
     const themeCtx = document.getElementById('theme-chart').getContext('2d');
-    const themeLabels = Object.keys(themeData);
-    const themeValues = Object.values(themeData).map(data => data.count);
     
     // Destruir gráfico anterior se existir
-    if (window.themeChartInstance) {
-        window.themeChartInstance.destroy();
+    if (progressCharts.themeChart) {
+        progressCharts.themeChart.destroy();
     }
     
-    // Cores para os temas
-    const themeColors = [
-        'rgba(44, 62, 80, 0.7)',
-        'rgba(52, 152, 219, 0.7)',
-        'rgba(155, 89, 182, 0.7)',
-        'rgba(241, 196, 15, 0.7)',
-        'rgba(230, 126, 34, 0.7)',
-        'rgba(231, 76, 60, 0.7)',
-        'rgba(46, 204, 113, 0.7)',
-        'rgba(22, 160, 133, 0.7)',
-        'rgba(39, 174, 96, 0.7)',
-        'rgba(41, 128, 185, 0.7)'
-    ];
+    const themeLabels = Object.keys(themeData);
+    const themeValues = Object.values(themeData);
     
-    window.themeChartInstance = new Chart(themeCtx, {
+    // Gerar cores aleatórias para os temas
+    const backgroundColors = themeLabels.map(() => {
+        const r = Math.floor(Math.random() * 200) + 55;
+        const g = Math.floor(Math.random() * 200) + 55;
+        const b = Math.floor(Math.random() * 200) + 55;
+        return `rgba(${r}, ${g}, ${b}, 0.7)`;
+    });
+    
+    progressCharts.themeChart = new Chart(themeCtx, {
         type: 'pie',
         data: {
             labels: themeLabels,
             datasets: [{
+                label: 'Jogos por Tema',
                 data: themeValues,
-                backgroundColor: themeColors.slice(0, themeLabels.length),
+                backgroundColor: backgroundColors,
                 borderWidth: 1
             }]
         },
         options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'right',
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return `${label}: ${value} jogos (${percentage}%)`;
-                        }
-                    }
-                }
-            }
+            responsive: true
         }
     });
 }
-
-// Carregar temas do Firebase
-async function loadThemesFromFirebase() {
-    try {
-        const snapshot = await db.collection('customThemes').get();
-        
-        snapshot.forEach(doc => {
-            const themeData = doc.data();
-            const themeId = `custom-${doc.id}`;
-            
-            // Adicionar tema à lista de temas
-            themes[themeId] = {
-                id: themeId,
-                name: themeData.name,
-                items: themeData.imageData,
-                className: 'image-piece',
-                type: 'custom',
-                solutionText: themeData.name
-            };
-        });
-        
-        // Renderizar a grade de temas
-        renderThemesGrid();
-        
-    } catch (error) {
-        console.error("Erro ao carregar temas do Firebase:", error);
-    }
-}
-
-// Renderizar grade de temas
-function renderThemesGrid() {
-    if (!themesGrid) return;
-    
-    themesGrid.innerHTML = '';
-    
-    // Adicionar temas built-in
-    Object.values(themes).forEach(theme => {
-        if (theme.type === 'builtin' || theme.type === 'custom') {
-            const themeCard = document.createElement('div');
-            themeCard.className = `theme-card ${currentTheme === theme.id ? 'active' : ''}`;
-            themeCard.dataset.theme = theme.id;
-            
-            let previewContent = '';
-            
-            if (theme.type === 'custom') {
-                // Para temas personalizados, mostrar a primeira peça como preview
-                previewContent = `<div class="theme-preview" style="background-image: url(${theme.items[0]}); background-size: cover; background-position: center;"></div>`;
-            } else {
-                // Para temas built-in, mostrar o exemplo
-                previewContent = `
-                    <div class="theme-preview">
-                        <div class="theme-example">
-                            ${theme.solutionText.replace(/\n/g, '<br>')}
-                        </div>
-                    </div>
-                `;
-            }
-            
-            themeCard.innerHTML = `
-                ${previewContent}
-                <div class="theme-info">
-                    <h3>${theme.name}</h3>
-                    <p>${theme.type === 'custom' ? 'Tema personalizado' : 'Tema padrão'}</p>
-                </div>
-                ${currentTheme === theme.id ? '<div class="theme-badge"><i class="fas fa-check"></i> Ativo</div>' : ''}
-            `;
-            
-            themeCard.addEventListener('click', () => {
-                if (theme.id === 'custom-image' && !isAdmin) {
-                    // Para usuários comuns, abrir modal de upload de imagem
-                    imageUploadModal.style.display = 'flex';
-                    imagePreviewContainer.style.display = 'none';
-                    imageUploadForm.reset();
-                } else {
-                    changeTheme(theme.id);
-                }
-            });
-            
-            themesGrid.appendChild(themeCard);
-        }
-    });
-    
-    // Adicionar tema de imagem personalizada (apenas para usuários comuns)
-    if (!isAdmin) {
-        const customImageTheme = themes['custom-image'];
-        const themeCard = document.createElement('div');
-        themeCard.className = `theme-card ${currentTheme === 'custom-image' ? 'active' : ''}`;
-        themeCard.dataset.theme = 'custom-image';
-        
-        themeCard.innerHTML = `
-            <div class="theme-preview">
-                <div class="theme-example">
-                    <i class="fas fa-image" style="font-size: 2.5rem; color: white;"></i>
-                </div>
-            </div>
-            <div class="theme-info">
-                <h3>${customImageTheme.name}</h3>
-                <p>Faça upload de uma imagem para criar seu próprio quebra-cabeça</p>
-            </div>
-            ${currentTheme === 'custom-image' ? '<div class="theme-badge"><i class="fas fa-check"></i> Ativo</div>' : ''}
-        `;
-        
-        themeCard.addEventListener('click', () => {
-            imageUploadModal.style.display = 'flex';
-            imagePreviewContainer.style.display = 'none';
-            imageUploadForm.reset();
-        });
-        
-        themesGrid.appendChild(themeCard);
-    }
-}
-
-// Manipular upload de imagem para tema personalizado (admin)
-function handleCustomThemeImageUpload(e) {
-    const file = e.target.files[0];
-    const previewBoard = document.getElementById('custom-theme-preview-board');
-    const previewContainer = document.getElementById('custom-theme-preview-container');
-    
-    if (!file) return;
-    
-    // Verificar se é uma imagem
-    if (!file.type.match('image.*')) {
-        alert('Por favor, selecione um arquivo de imagem.');
-        return;
-    }
-    
-    const reader = new FileReader();
-    
-    reader.onload = function(event) {
-        const img = new Image();
-        img.onload = function() {
-            // Processar a imagem
-            processImageForPreview(img, previewBoard, true);
-            
-            // Mostrar preview
-            previewContainer.style.display = 'block';
-        };
-        
-        img.onerror = function() {
-            alert('Erro ao carregar a imagem. Tente novamente.');
-        };
-        
-        img.src = event.target.result;
-    };
-    
-    reader.readAsDataURL(file);
-}
-
-// Abrir modal de criação/edição de tema personalizado
-function openCustomThemeModal(themeId = null) {
-    const modal = document.getElementById('custom-theme-modal');
-    const modalTitle = document.getElementById('custom-theme-title');
-    const submitText = document.getElementById('custom-theme-submit-text');
-    const form = document.getElementById('custom-theme-form');
-    const themeIdInput = document.getElementById('custom-theme-id');
-    const previewContainer = document.getElementById('custom-theme-preview-container');
-    
-    // Resetar o formulário
-    form.reset();
-    previewContainer.style.display = 'none';
-    
-    if (themeId) {
-        // Modo edição
-        modalTitle.textContent = 'Editar Tema Personalizado';
-        submitText.textContent = 'Atualizar Tema';
-        
-        // Preencher com dados do tema
-        const theme = themes[themeId];
-        if (theme) {
-            document.getElementById('custom-theme-name').value = theme.name;
-            themeIdInput.value = themeId.replace('custom-', '');
-            
-            // Mostrar preview da imagem existente
-            const previewBoard = document.getElementById('custom-theme-preview-board');
-            previewBoard.innerHTML = '';
-            
-            // Usar a primeira imagem como preview
-            if (theme.items && theme.items[0]) {
-                const previewDiv = document.createElement('div');
-                previewDiv.className = 'theme-preview';
-                previewDiv.style.backgroundImage = `url(${theme.items[0]})`;
-                previewDiv.style.height = '140px';
-                previewDiv.style.backgroundSize = 'cover';
-                previewDiv.style.backgroundPosition = 'center';
-                previewBoard.appendChild(previewDiv);
-                previewContainer.style.display = 'block';
-            }
-        }
-    } else {
-        // Modo criação
-        modalTitle.textContent = 'Criar Tema Personalizado';
-        submitText.textContent = 'Salvar Tema';
-        themeIdInput.value = '';
-    }
-    
-    modal.style.display = 'flex';
-}
-
-// Manipular envio de tema personalizado
-async function handleCustomThemeSubmit(e) {
-    e.preventDefault();
-    
-    if (!isAdmin) {
-        alert('Apenas administradores podem criar temas personalizados.');
-        return;
-    }
-    
-    const themeName = document.getElementById('custom-theme-name').value;
-    const themeId = document.getElementById('custom-theme-id').value;
-    const imageFile = document.getElementById('custom-theme-image').files[0];
-    const messageElement = document.getElementById('custom-theme-message');
-    
-    // Validar entrada
-    if (!themeName) {
-        showFormMessage(messageElement, 'Por favor, digite um nome para o tema.', 'error');
-        return;
-    }
-    
-    // Para criação, é necessário ter uma imagem
-    if (!themeId && !imageFile) {
-        showFormMessage(messageElement, 'Por favor, selecione uma imagem para o tema.', 'error');
-        return;
-    }
-    
-    // Para edição, se não houver nova imagem, usar a imagem existente
-    let imageData = window.tempCustomThemeData;
-    
-    // Se for uma edição sem nova imagem, precisamos obter os dados existentes
-    if (themeId && !imageFile) {
-        const existingThemeId = `custom-${themeId}`;
-        if (themes[existingThemeId] && themes[existingThemeId].items) {
-            imageData = themes[existingThemeId].items;
-        } else {
-            showFormMessage(messageElement, 'Erro ao carregar dados do tema existente.', 'error');
-            return;
-        }
-    }
-    
-    // Se não houver dados de imagem (nem temporários nem existentes)
-    if (!imageData) {
-        showFormMessage(messageElement, 'Por favor, selecione uma imagem para o tema.', 'error');
-        return;
-    }
-    
-    try {
-        showFormMessage(messageElement, themeId ? 'Atualizando tema...' : 'Salvando tema...', 'info');
-        
-        const themeData = {
-            name: themeName,
-            imageData: imageData,
-            createdBy: currentUser.uid,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        let newThemeId;
-        
-        if (themeId) {
-            // Atualizar tema existente
-            await db.collection('customThemes').doc(themeId).update(themeData);
-            newThemeId = themeId;
-        } else {
-            // Criar novo tema
-            const docRef = await db.collection('customThemes').add(themeData);
-            newThemeId = docRef.id;
-        }
-        
-        // Atualizar tema na lista local
-        const themeKey = `custom-${newThemeId}`;
-        themes[themeKey] = {
-            id: themeKey,
-            name: themeName,
-            items: imageData,
-            className: 'image-piece',
-            type: 'custom',
-            solutionText: themeName
-        };
-        
-        showFormMessage(messageElement, themeId ? 'Tema atualizado com sucesso!' : 'Tema criado com sucesso!', 'success');
-        
-        // Fechar modal após 1.5 segundos
-        setTimeout(() => {
-            customThemeModal.style.display = 'none';
-            clearFormMessage(messageElement);
-            
-            // Recarregar temas
-            renderThemesGrid();
-            loadCustomThemesForAdmin();
-        }, 1500);
-        
-    } catch (error) {
-        console.error("Erro ao salvar tema personalizado:", error);
-        showFormMessage(messageElement, 'Erro ao salvar tema. Tente novamente.', 'error');
-    }
-}
-
-// Carregar temas personalizados para o admin
-async function loadCustomThemesForAdmin() {
-    if (!isAdmin) return;
-    
-    const loadingElement = document.getElementById('custom-themes-loading');
-    const themesListElement = document.getElementById('custom-themes-list');
-    
-    if (loadingElement) loadingElement.style.display = 'flex';
-    if (themesListElement) themesListElement.innerHTML = '';
-    
-    try {
-        const snapshot = await db.collection('customThemes').orderBy('createdAt', 'desc').get();
-        
-        if (snapshot.empty) {
-            themesListElement.innerHTML = '<p class="no-themes">Nenhum tema personalizado encontrado.</p>';
-            return;
-        }
-        
-        snapshot.forEach(doc => {
-            const themeData = doc.data();
-            const themeId = doc.id;
-            const date = themeData.createdAt && themeData.createdAt.toDate ? themeData.createdAt.toDate() : new Date();
-            const formattedDate = date.toLocaleDateString('pt-BR');
-            
-            const themeItem = document.createElement('div');
-            themeItem.className = 'custom-theme-item';
-            
-            themeItem.innerHTML = `
-                <div class="custom-theme-preview" style="background-image: url(${themeData.imageData[0]});"></div>
-                <div class="custom-theme-info">
-                    <div class="custom-theme-name">${themeData.name}</div>
-                    <div class="custom-theme-date">Criado em: ${formattedDate}</div>
-                    <div class="custom-theme-actions">
-                        <button class="btn btn-secondary btn-small edit-theme-btn" data-theme-id="${themeId}">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="btn btn-danger btn-small delete-theme-btn" data-theme-id="${themeId}">
-                            <i class="fas fa-trash"></i> Excluir
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            themesListElement.appendChild(themeItem);
-        });
-        
-        // Adicionar event listeners aos botões
-        const editButtons = document.querySelectorAll('.edit-theme-btn');
-        editButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const themeId = this.dataset.themeId;
-                openCustomThemeModal(`custom-${themeId}`);
-            });
-        });
-        
-        const deleteButtons = document.querySelectorAll('.delete-theme-btn');
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const themeId = this.dataset.themeId;
-                deleteCustomTheme(themeId);
-            });
-        });
-        
-    } catch (error) {
-        console.error("Erro ao carregar temas personalizados:", error);
-        themesListElement.innerHTML = '<p class="error-message">Erro ao carregar temas personalizados.</p>';
-    } finally {
-        if (loadingElement) loadingElement.style.display = 'none';
-    }
-}
-
-// Excluir tema personalizado
-async function deleteCustomTheme(themeId) {
-    if (!confirm('Tem certeza que deseja excluir este tema? Esta ação não pode ser desfeita.')) {
-        return;
-    }
-    
-    try {
-        await db.collection('customThemes').doc(themeId).delete();
-        
-        // Remover tema da lista local
-        const themeKey = `custom-${themeId}`;
-        delete themes[themeKey];
-        
-        // Se o tema atual for o que foi excluído, mudar para o tema padrão
-        if (currentTheme === themeKey) {
-            changeTheme('numbers');
-        }
-        
-        // Recarregar temas
-        renderThemesGrid();
-        loadCustomThemesForAdmin();
-        
-        alert('Tema excluído com sucesso!');
-        
-    } catch (error) {
-        console.error("Erro ao excluir tema:", error);
-        alert('Erro ao excluir tema. Tente novamente.');
-    }
-}
-
-// Carregar estatísticas do admin
-async function loadAdminStats() {
-    if (!isAdmin) return;
-    
-    try {
-        // Total de usuários
-        const usersSnapshot = await db.collection('users').get();
-        document.getElementById('admin-total-users').textContent = usersSnapshot.size;
-        
-        // Usuários ativos hoje
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const activeUsersSnapshot = await db.collection('users')
-            .where('lastLogin', '>=', today)
-            .get();
-        
-        document.getElementById('admin-active-today').textContent = activeUsersSnapshot.size;
-        
-        // Total de pontuações
-        const scoresSnapshot = await db.collection('scores').get();
-        document.getElementById('admin-total-scores').textContent = scoresSnapshot.size;
-        
-        // Total de temas personalizados
-        const themesSnapshot = await db.collection('customThemes').get();
-        document.getElementById('admin-total-themes').textContent = themesSnapshot.size;
-        
-        // Criar gráficos
-        createAdminCharts();
-        
-    } catch (error) {
-        console.error("Erro ao carregar estatísticas do admin:", error);
-    }
-}
-
-// Criar gráficos para o admin
-function createAdminCharts() {
-    // Este é um placeholder - em uma implementação real, você buscaria dados reais
-    // Gráfico de jogos por dia (últimos 7 dias)
-    const gamesCtx = document.getElementById('admin-games-chart').getContext('2d');
-    
-    // Dados de exemplo
-    const labels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    const data = [12, 19, 8, 15, 12, 18, 14];
-    
-    // Destruir gráfico anterior se existir
-    if (window.adminGamesChartInstance) {
-        window.adminGamesChartInstance.destroy();
-    }
-    
-    window.adminGamesChartInstance = new Chart(gamesCtx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Jogos',
-                data: data,
-                borderColor: 'rgba(44, 62, 80, 1)',
-                backgroundColor: 'rgba(44, 62, 80, 0.1)',
-                tension: 0.3,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Número de Jogos'
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Dia da Semana'
-                    }
-                }
-            }
-        }
-    });
-    
-    // Gráfico de usuários por tipo
-    const usersCtx = document.getElementById('admin-users-chart').getContext('2d');
-    
-    // Destruir gráfico anterior se existir
-    if (window.adminUsersChartInstance) {
-        window.adminUsersChartInstance.destroy();
-    }
-    
-    window.adminUsersChartInstance = new Chart(usersCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Jogadores', 'Administradores'],
-            datasets: [{
-                data: [85, 15], // Dados de exemplo
-                backgroundColor: [
-                    'rgba(44, 62, 80, 0.7)',
-                    'rgba(243, 156, 18, 0.7)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-}
-
-// As funções restantes (loadAdminUsers, openEditUserModal, handleEditUser, loadAdminScores, deleteScore, clearOldScores, handleAdminRegister)
-// permanecem as mesmas do código original, apenas certificando-se de que estão presentes.
 
 // Carregar usuários para administração
 async function loadAdminUsers() {
@@ -2642,6 +2425,7 @@ async function loadAdminUsers() {
     
     try {
         // Verificar se o usuário atual é administrador
+        const isAdmin = await checkIfUserIsAdmin(currentUser.uid);
         if (!isAdmin) {
             if (usersListElement) {
                 usersListElement.innerHTML = '<p class="error-message">Acesso negado. Apenas administradores podem acessar esta área.</p>';
@@ -2785,6 +2569,14 @@ async function handleEditUser(userId) {
         
         await db.collection('users').doc(userId).update(updateData);
         
+        // Se uma nova senha foi fornecida, atualizá-la no Firebase Auth
+        if (password && password.length >= 6) {
+            // Nota: Para atualizar a senha de outro usuário, você precisaria
+            // de privilégios de administrador no Firebase Auth
+            // Esta funcionalidade requer configuração adicional
+            console.log("Atualização de senha solicitada para usuário:", userId);
+        }
+        
         showFormMessage(messageElement, 'Usuário atualizado com sucesso!', 'success');
         
         // Recarregar lista de usuários após 1.5 segundos
@@ -2808,6 +2600,7 @@ async function loadAdminScores() {
     if (!currentUser) return;
     
     // Verificar se o usuário atual é administrador
+    const isAdmin = await checkIfUserIsAdmin(currentUser.uid);
     if (!isAdmin) {
         if (scoresListElement) {
             scoresListElement.innerHTML = '<p class="error-message">Acesso negado. Apenas administradores podem acessar esta área.</p>';
@@ -2834,7 +2627,12 @@ async function loadAdminScores() {
         
         // Aplicar filtro de tema
         if (theme !== 'all') {
-            query = query.where('theme', '==', theme);
+            if (theme === 'custom') {
+                // Filtrar por temas personalizados
+                query = query.where('themeId', '!=', null);
+            } else {
+                query = query.where('theme', '==', theme);
+            }
         }
         
         // Aplicar filtro de data
@@ -2878,7 +2676,7 @@ async function loadAdminScores() {
                         <div class="score-date">${formattedDate} ${formattedTime}</div>
                         <div class="score-info">
                             <span class="score-user">${score.userName}</span>
-                            <span class="score-difficulty">${getDifficultyText(score.difficulty)} • ${themes[score.theme]?.name || score.theme}</span>
+                            <span class="score-difficulty">${getDifficultyText(score.difficulty)} • ${score.themeName || score.theme}</span>
                         </div>
                         <div class="score-details">
                             <span>${score.moves} movimentos</span>
@@ -3010,6 +2808,7 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, 'Criando conta...', 'info');
         
         // Verificar se o usuário atual é administrador
+        const isAdmin = await checkIfUserIsAdmin(currentUser.uid);
         if (!isAdmin) {
             showFormMessage(messageElement, 'Apenas administradores podem criar novas contas.', 'error');
             return;
@@ -3064,5 +2863,138 @@ async function handleAdminRegister(e) {
         }
         
         showFormMessage(messageElement, errorMessage, 'error');
+    }
+}
+
+// Carregar estatísticas administrativas
+async function loadAdminStats() {
+    if (!currentUser) return;
+    
+    // Verificar se o usuário atual é administrador
+    const isAdmin = await checkIfUserIsAdmin(currentUser.uid);
+    if (!isAdmin) return;
+    
+    try {
+        // Carregar estatísticas de usuários
+        const usersSnapshot = await db.collection('users').get();
+        const totalUsers = usersSnapshot.size;
+        
+        let adminCount = 0;
+        let playerCount = 0;
+        let activeCount = 0;
+        let suspendedCount = 0;
+        
+        usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            if (userData.role === 'admin') {
+                adminCount++;
+            } else {
+                playerCount++;
+            }
+            
+            if (userData.status === 'suspended') {
+                suspendedCount++;
+            } else {
+                activeCount++;
+            }
+        });
+        
+        // Atualizar estatísticas de usuários
+        document.getElementById('admin-total-users').textContent = totalUsers;
+        
+        // Gráfico de distribuição de usuários
+        const usersCtx = document.getElementById('admin-users-chart').getContext('2d');
+        new Chart(usersCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Administradores', 'Jogadores'],
+                datasets: [{
+                    data: [adminCount, playerCount],
+                    backgroundColor: [
+                        'rgba(243, 156, 18, 0.7)',
+                        'rgba(44, 62, 80, 0.7)'
+                    ]
+                }]
+            }
+        });
+        
+        // Carregar estatísticas de jogos
+        const scoresSnapshot = await db.collection('scores').get();
+        const totalGames = scoresSnapshot.size;
+        
+        // Calcular média de movimentos
+        let totalMoves = 0;
+        scoresSnapshot.forEach(doc => {
+            totalMoves += doc.data().moves;
+        });
+        const avgMoves = totalGames > 0 ? Math.round(totalMoves / totalGames) : 0;
+        
+        // Atualizar estatísticas de jogos
+        document.getElementById('admin-total-games').textContent = totalGames;
+        document.getElementById('admin-avg-score').textContent = avgMoves;
+        
+        // Carregar estatísticas de temas
+        const themesSnapshot = await db.collection('themes').where('status', '==', 'active').get();
+        const totalThemes = themesSnapshot.size;
+        document.getElementById('admin-total-themes').textContent = totalThemes;
+        
+        // Carregar estatísticas de jogos por dia (últimos 7 dias)
+        const last7Days = [];
+        const gamesByDay = {};
+        
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateString = date.toISOString().split('T')[0];
+            last7Days.push(dateString);
+            gamesByDay[dateString] = 0;
+        }
+        
+        // Contar jogos por dia
+        scoresSnapshot.forEach(doc => {
+            const gameDate = doc.data().date;
+            if (gameDate && gameDate.toDate) {
+                const dateObj = gameDate.toDate();
+                const dateString = dateObj.toISOString().split('T')[0];
+                
+                if (gamesByDay[dateString] !== undefined) {
+                    gamesByDay[dateString]++;
+                }
+            }
+        });
+        
+        // Gráfico de jogos por dia
+        const gamesCtx = document.getElementById('admin-games-chart').getContext('2d');
+        new Chart(gamesCtx, {
+            type: 'line',
+            data: {
+                labels: last7Days.map(date => {
+                    const d = new Date(date);
+                    return `${d.getDate()}/${d.getMonth() + 1}`;
+                }),
+                datasets: [{
+                    label: 'Jogos por Dia',
+                    data: last7Days.map(date => gamesByDay[date] || 0),
+                    borderColor: 'rgba(44, 62, 80, 1)',
+                    backgroundColor: 'rgba(44, 62, 80, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error("Erro ao carregar estatísticas administrativas:", error);
     }
 }
