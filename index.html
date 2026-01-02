@@ -779,16 +779,13 @@
                         <input type="password" id="register-confirm-password" required>
                     </div>
                     
-                    <!-- Opção de tipo de usuário para primeiro administrador -->
+                    <!-- Opção de tipo de usuário (visível apenas se não houver admin no sistema) -->
                     <div id="register-role-container" class="form-group" style="display: none;">
-                        <label for="register-role">Tipo de Usuário</label>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="register-role-admin">
-                            <label for="register-role-admin" class="checkbox-label">
-                                Cadastrar como Administrador
-                            </label>
-                        </div>
-                        <small class="form-hint">Apenas disponível para o primeiro administrador do sistema</small>
+                        <label for="register-role">Tipo de Usuário *</label>
+                        <select id="register-role" required>
+                            <option value="player">Jogador</option>
+                            <option value="admin">Administrador</option>
+                        </select>
                     </div>
                     
                     <div class="form-group">
@@ -1036,4 +1033,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
