@@ -1,57 +1,66 @@
 # Racha Cuca - Jogo Clássico de Quebra-Cabeça
 
-![Racha Cuca](https://img.shields.io/badge/Status-Online-brightgreen)
-![Versão](https://img.shields.io/badge/Versão-2.0-blue)
-![Tecnologias](https://img.shields.io/badge/Tecnologias-HTML%2FCSS%2FJS%2FFirebase-orange)
+## 📋 Sobre o Projeto
 
-Um jogo de quebra-cabeça numérico clássico desenvolvido com tecnologias web modernas, com sistema de autenticação, ranking online, múltiplos temas e funcionalidades administrativas.
+Racha Cuca é um jogo clássico de quebra-cabeça numérico desenvolvido com tecnologias web modernas. O jogo desafia os jogadores a organizarem peças numeradas de 1 a 15 em ordem crescente, com um espaço vazio para movimentação.
 
-## 🎮 Funcionalidades
+## 🚀 Funcionalidades
 
-### Para Todos os Usuários
-- **Jogo de quebra-cabeça 15-puzzle** com arrastar e soltar
-- **Múltiplos temas**: números, palavras, animais, frutas, bandeiras, emojis
-- **Sistema de ranking** com filtros por dificuldade, tema e período
-- **Estatísticas globais** em tempo real
-- **Modo visitante** para jogar sem cadastro
-- **Totalmente responsivo** para dispositivos móveis e desktop
+### 🎮 Jogo Principal
+- Interface drag-and-drop intuitiva
+- Sistema de timer e contagem de movimentos
+- Diferentes níveis de dificuldade (Fácil, Normal, Difícil)
+- Sistema de dicas para auxiliar os jogadores
+- Visualização da solução completa
 
-### Para Usuários Registrados
-- **Salvamento automático** de pontuações
-- **Painel de progresso** com estatísticas pessoais
-- **Gráficos de desempenho** (média de movimentos, tempo, evolução)
-- **Histórico completo** de jogos
-- **Opção "Lembrar-me"** para manter login ativo
+### 👤 Sistema de Usuários
+- Cadastro e login de usuários
+- Modo visitante (sem necessidade de cadastro)
+- Opção "Lembrar-me" para manter sessão ativa
+- Recuperação de senha por email
 
-### Para Administradores
-- **Painel administrativo** completo
-- **Gerenciamento de usuários** (criar, editar, suspender)
-- **Gerenciamento de pontuações** (visualizar, excluir, limpar antigas)
-- **Criação de temas personalizados** com upload de imagens
-- **Estatísticas administrativas** detalhadas
-- **Cadastro de novos usuários** (jogadores e administradores)
+### 🏆 Sistema de Ranking
+- Ranking global de pontuações
+- Filtros por dificuldade, tema e período
+- Medalhas para os 3 primeiros colocados
+- Destaque para a pontuação do usuário atual
+
+### 📊 Sistema de Progresso
+- Estatísticas individuais de desempenho
+- Gráficos de desempenho por dificuldade e tema
+- Histórico de pontuações recentes
+- Metas e conquistas pessoais
+
+### 🎨 Sistema de Temas
+- Temas pré-definidos (Números, Palavras, Animais, Frutas, Bandeiras, Emojis)
+- Upload de imagens personalizadas (para sessão atual)
+- Criação de temas personalizados permanentes (apenas administradores)
+- Pré-visualização dos temas
+
+### ⚙️ Painel de Administração
+- Gerenciamento completo de usuários
+- Controle de todas as pontuações do sistema
+- Criação, edição e exclusão de temas personalizados
+- Estatísticas avançadas do sistema
+- Cadastro de novos usuários (jogadores e administradores)
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Backend**: Firebase (Authentication, Firestore Database)
-- **Bibliotecas**:
-  - Chart.js para gráficos e visualizações
-  - Font Awesome para ícones
-  - Google Fonts (Poppins, Rubik)
-- **Hosting**: Firebase Hosting
+### Frontend
+- HTML5, CSS3, JavaScript (ES6+)
+- Chart.js para gráficos e visualizações
+- Font Awesome para ícones
+- Google Fonts (Poppins, Rubik)
 
-## 📋 Pré-requisitos
+### Backend & Banco de Dados
+- Firebase Authentication (autenticação de usuários)
+- Firebase Firestore (banco de dados NoSQL)
+- Firebase Hosting (deploy)
 
-Para executar localmente ou fazer deploy:
+### Design
+- Design responsivo (mobile-first)
+- Interface moderna e intuitiva
+- Sistema de cores consistente
+- Animações e transições suaves
 
-1. **Conta no Firebase**: [firebase.google.com](https://firebase.google.com)
-2. **Navegador moderno** (Chrome, Firefox, Edge, Safari)
-3. **Conexão com internet** (para Firebase)
-
-## 🚀 Configuração e Instalação
-
-### 1. Clone o repositório
-```bash
-git clone https://github.com/seu-usuario/rachacuca.git
-cd rachacuca
+## 📁 Estrutura do Projeto
