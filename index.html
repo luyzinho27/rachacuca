@@ -62,8 +62,8 @@
                             <span>Competição online</span>
                         </div>
                         <div class="feature">
-                            <i class="fas fa-chart-line"></i>
-                            <span>Estatísticas detalhadas</span>
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>Totalmente responsivo</span>
                         </div>
                     </div>
                 </div>
@@ -114,8 +114,8 @@
                 <ul>
                     <li><a href="#" id="nav-home" class="nav-link active"><i class="fas fa-home"></i> Início</a></li>
                     <li><a href="#" id="nav-game" class="nav-link"><i class="fas fa-gamepad"></i> Jogar</a></li>
-                    <li><a href="#" id="nav-progress" class="nav-link"><i class="fas fa-chart-line"></i> Progresso</a></li>
                     <li><a href="#" id="nav-ranking" class="nav-link"><i class="fas fa-trophy"></i> Ranking</a></li>
+                    <li><a href="#" id="nav-progress" class="nav-link"><i class="fas fa-chart-line"></i> Progresso</a></li>
                     <li><a href="#" id="nav-themes" class="nav-link"><i class="fas fa-palette"></i> Temas</a></li>
                     <li id="admin-nav-item" style="display: none;">
                         <a href="#" id="nav-admin" class="nav-link"><i class="fas fa-cog"></i> Admin</a>
@@ -301,76 +301,6 @@
                             <div id="solution-board" class="solution-board">
                                 <!-- Grade de solução será gerada via JavaScript -->
                             </div>
-                            <div id="image-solution-preview" class="image-solution-preview" style="display: none;">
-                                <!-- Preview da imagem personalizada na solução -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Seção de Progresso -->
-            <section id="progress-section" class="page-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-chart-line"></i> Meu Progresso</h2>
-                    <p>Acompanhe suas estatísticas e desempenho ao longo do tempo</p>
-                </div>
-                
-                <div class="progress-container">
-                    <div class="progress-stats">
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-gamepad"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="user-total-games">0</div>
-                                <div class="stat-label">Jogos Concluídos</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-shoe-prints"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="user-total-moves">0</div>
-                                <div class="stat-label">Total de Movimentos</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="user-total-time">0</div>
-                                <div class="stat-label">Tempo Total</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-trophy"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="user-best-score">0</div>
-                                <div class="stat-label">Melhor Pontuação</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="progress-charts">
-                        <div class="chart-container">
-                            <h3><i class="fas fa-chart-bar"></i> Desempenho por Dificuldade</h3>
-                            <canvas id="difficulty-chart"></canvas>
-                        </div>
-                        <div class="chart-container">
-                            <h3><i class="fas fa-chart-pie"></i> Distribuição por Tema</h3>
-                            <canvas id="theme-chart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div class="recent-games">
-                        <h3><i class="fas fa-history"></i> Jogos Recentes</h3>
-                        <div id="recent-games-list" class="games-list">
-                            <!-- Lista de jogos recentes será carregada via JavaScript -->
                         </div>
                     </div>
                 </div>
@@ -398,9 +328,7 @@
                             <option value="numbers">Números</option>
                             <option value="words">Palavras</option>
                             <option value="animals">Animais</option>
-                            <option value="fruits">Frutas</option>
-                            <option value="flags">Bandeiras</option>
-                            <option value="emoji">Emojis</option>
+                            <option value="custom-image">Imagem Personalizada</option>
                         </select>
                     </div>
                 </div>
@@ -416,6 +344,65 @@
                 </div>
             </section>
 
+            <!-- Seção de Progresso -->
+            <section id="progress-section" class="page-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> Estatísticas e Progresso</h2>
+                    <p>Acompanhe seu desempenho e progresso no jogo</p>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-tabs">
+                        <button class="progress-tab active" data-tab="user-progress-tab">
+                            <i class="fas fa-user"></i> Meu Progresso
+                        </button>
+                        <button class="progress-tab" data-tab="admin-progress-tab">
+                            <i class="fas fa-cog"></i> Estatísticas Admin
+                        </button>
+                    </div>
+                    
+                    <div class="progress-content">
+                        <!-- Aba: Meu Progresso -->
+                        <div id="user-progress-tab" class="progress-tab-content active">
+                            <h3><i class="fas fa-chart-bar"></i> Minhas Estatísticas</h3>
+                            <div id="user-stats" class="stats-container">
+                                <!-- As estatísticas do usuário serão carregadas aqui -->
+                            </div>
+                            
+                            <div class="charts-container">
+                                <div class="chart-box">
+                                    <h4>Desempenho por Dificuldade</h4>
+                                    <canvas id="difficulty-chart"></canvas>
+                                </div>
+                                <div class="chart-box">
+                                    <h4>Evolução de Movimentos</h4>
+                                    <canvas id="moves-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Aba: Estatísticas Admin -->
+                        <div id="admin-progress-tab" class="progress-tab-content">
+                            <h3><i class="fas fa-chart-pie"></i> Estatísticas do Sistema (Admin)</h3>
+                            <div id="admin-stats" class="stats-container">
+                                <!-- As estatísticas admin serão carregadas aqui -->
+                            </div>
+                            
+                            <div class="charts-container">
+                                <div class="chart-box">
+                                    <h4>Distribuição de Jogadores</h4>
+                                    <canvas id="players-chart"></canvas>
+                                </div>
+                                <div class="chart-box">
+                                    <h4>Atividade do Sistema</h4>
+                                    <canvas id="activity-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Seção de Temas -->
             <section id="themes-section" class="page-section">
                 <div class="section-header">
@@ -425,33 +412,14 @@
                 
                 <div class="themes-container">
                     <div class="themes-grid" id="themes-grid">
-                        <!-- Temas padrão serão carregados via JavaScript -->
+                        <!-- Temas serão carregados via JavaScript -->
                     </div>
                     
                     <div class="theme-instructions">
                         <h3><i class="fas fa-lightbulb"></i> Dica</h3>
                         <p>Clique em um tema para selecioná-lo. O tema será aplicado imediatamente ao seu jogo.</p>
-                        <p>Para usar uma imagem personalizada, clique no botão "Criar Tema Personalizado" abaixo.</p>
-                    </div>
-                    
-                    <div class="custom-themes-section">
-                        <h3><i class="fas fa-images"></i> Temas Personalizados</h3>
-                        <p>Temas criados pelos administradores. Clique para selecionar.</p>
-                        <div id="custom-themes-grid" class="themes-grid">
-                            <!-- Temas personalizados serão carregados via JavaScript -->
-                        </div>
-                        <div id="no-custom-themes" class="no-themes-message">
-                            <p>Nenhum tema personalizado disponível no momento.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="theme-actions">
-                        <button id="create-custom-theme-btn" class="btn btn-primary">
-                            <i class="fas fa-plus-circle"></i> Criar Tema Personalizado (Admin)
-                        </button>
-                        <button id="manage-themes-btn" class="btn btn-secondary" style="display: none;">
-                            <i class="fas fa-cog"></i> Gerenciar Temas (Admin)
-                        </button>
+                        <p>Para usar uma imagem personalizada, clique no tema "Imagem Personalizada" e faça o upload de uma imagem.</p>
+                        <p id="admin-theme-instruction" style="display: none;">Como administrador, você pode criar temas personalizados que ficarão disponíveis para todos os usuários.</p>
                     </div>
                 </div>
             </section>
@@ -471,14 +439,11 @@
                         <button class="admin-tab" data-tab="scores-tab">
                             <i class="fas fa-trophy"></i> Todas as Pontuações
                         </button>
-                        <button class="admin-tab" data-tab="themes-management-tab">
+                        <button class="admin-tab" data-tab="themes-admin-tab">
                             <i class="fas fa-palette"></i> Gerenciar Temas
                         </button>
                         <button class="admin-tab" data-tab="register-tab">
-                            <i class="fas fa-user-plus"></i> Cadastrar Usuário
-                        </button>
-                        <button class="admin-tab" data-tab="admin-stats-tab">
-                            <i class="fas fa-chart-bar"></i> Estatísticas Admin
+                            <i class="fas fa-user-plus"></i> Cadastrar Novo Usuário
                         </button>
                     </div>
                     
@@ -516,10 +481,7 @@
                                     <option value="numbers">Números</option>
                                     <option value="words">Palavras</option>
                                     <option value="animals">Animais</option>
-                                    <option value="fruits">Frutas</option>
-                                    <option value="flags">Bandeiras</option>
-                                    <option value="emoji">Emojis</option>
-                                    <option value="custom">Personalizados</option>
+                                    <option value="custom-image">Imagem Personalizada</option>
                                 </select>
                                 <input type="date" id="admin-score-date" class="filter-select">
                                 <button id="clear-scores-btn" class="btn btn-danger">
@@ -538,13 +500,11 @@
                         </div>
                         
                         <!-- Aba: Gerenciar Temas -->
-                        <div id="themes-management-tab" class="admin-tab-content">
+                        <div id="themes-admin-tab" class="admin-tab-content">
                             <h3><i class="fas fa-palette"></i> Gerenciar Temas Personalizados</h3>
-                            <p class="form-info">Como administrador, você pode criar, editar e excluir temas personalizados que ficarão disponíveis para todos os usuários.</p>
-                            
-                            <div class="admin-themes-actions">
-                                <button id="admin-create-theme-btn" class="btn btn-primary">
-                                    <i class="fas fa-plus-circle"></i> Criar Novo Tema
+                            <div class="admin-actions">
+                                <button id="create-theme-btn" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Criar Novo Tema
                                 </button>
                             </div>
                             
@@ -553,8 +513,8 @@
                                 <p>Carregando temas...</p>
                             </div>
                             
-                            <div id="admin-themes-list" class="admin-themes-list">
-                                <!-- Lista de temas será carregada via JavaScript -->
+                            <div id="admin-themes-list" class="themes-admin-list">
+                                <!-- Lista de temas personalizados será carregada via JavaScript -->
                             </div>
                         </div>
                         
@@ -600,62 +560,6 @@
                                 
                                 <div id="admin-register-message" class="form-message"></div>
                             </form>
-                        </div>
-                        
-                        <!-- Aba: Estatísticas Admin -->
-                        <div id="admin-stats-tab" class="admin-tab-content">
-                            <h3><i class="fas fa-chart-bar"></i> Estatísticas do Sistema</h3>
-                            <p class="form-info">Estatísticas detalhadas do sistema para análise administrativa.</p>
-                            
-                            <div class="admin-stats-grid">
-                                <div class="admin-stat-card">
-                                    <div class="admin-stat-icon">
-                                        <i class="fas fa-users"></i>
-                                    </div>
-                                    <div class="admin-stat-content">
-                                        <div class="admin-stat-value" id="admin-total-users">0</div>
-                                        <div class="admin-stat-label">Total de Usuários</div>
-                                    </div>
-                                </div>
-                                <div class="admin-stat-card">
-                                    <div class="admin-stat-icon">
-                                        <i class="fas fa-gamepad"></i>
-                                    </div>
-                                    <div class="admin-stat-content">
-                                        <div class="admin-stat-value" id="admin-total-games">0</div>
-                                        <div class="admin-stat-label">Total de Jogos</div>
-                                    </div>
-                                </div>
-                                <div class="admin-stat-card">
-                                    <div class="admin-stat-icon">
-                                        <i class="fas fa-trophy"></i>
-                                    </div>
-                                    <div class="admin-stat-content">
-                                        <div class="admin-stat-value" id="admin-avg-score">0</div>
-                                        <div class="admin-stat-label">Pontuação Média</div>
-                                    </div>
-                                </div>
-                                <div class="admin-stat-card">
-                                    <div class="admin-stat-icon">
-                                        <i class="fas fa-palette"></i>
-                                    </div>
-                                    <div class="admin-stat-content">
-                                        <div class="admin-stat-value" id="admin-total-themes">0</div>
-                                        <div class="admin-stat-label">Temas Personalizados</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="admin-charts">
-                                <div class="admin-chart-container">
-                                    <h4><i class="fas fa-chart-line"></i> Jogos por Dia (Últimos 7 dias)</h4>
-                                    <canvas id="admin-games-chart"></canvas>
-                                </div>
-                                <div class="admin-chart-container">
-                                    <h4><i class="fas fa-chart-pie"></i> Distribuição de Usuários</h4>
-                                    <canvas id="admin-users-chart"></canvas>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -821,6 +725,73 @@
         </div>
     </div>
 
+    <!-- Modal de Upload/Criação de Tema -->
+    <div id="theme-create-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-image"></i> Criar Tema Personalizado</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="upload-instructions">
+                    <p>Faça upload de uma imagem para criar um quebra-cabeça personalizado. A imagem será dividida em 15 peças.</p>
+                    <p><strong>Recomendação:</strong> Use uma imagem quadrada para melhor resultado.</p>
+                </div>
+                <form id="theme-create-form">
+                    <div class="form-group">
+                        <label for="theme-name">Nome do Tema *</label>
+                        <input type="text" id="theme-name" placeholder="Ex: Praia, Montanha, Cachorros" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="theme-description">Descrição</label>
+                        <textarea id="theme-description" placeholder="Descreva seu tema..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="theme-image-file">Selecione uma imagem *</label>
+                        <input type="file" id="theme-image-file" accept="image/*" required>
+                    </div>
+                    
+                    <div id="theme-preview-container" style="display:none;">
+                        <h3>Prévia do Quebra-Cabeça</h3>
+                        <div id="theme-preview-board" class="puzzle-board"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-save"></i> Salvar Tema Personalizado
+                        </button>
+                    </div>
+                </form>
+                <div id="theme-create-message" class="form-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Visualização de Tema -->
+    <div id="theme-view-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-eye"></i> Visualizar Tema</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <h3 id="theme-view-name"></h3>
+                <p id="theme-view-description"></p>
+                <div id="theme-view-preview" class="puzzle-board"></div>
+                <div id="theme-view-actions" class="modal-actions">
+                    <button id="use-theme-btn" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Usar este Tema
+                    </button>
+                    <button id="delete-theme-btn" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Excluir Tema
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Instruções -->
     <div id="instructions-modal" class="modal">
         <div class="modal-content">
@@ -884,72 +855,6 @@
                     <button id="start-playing-btn" class="btn btn-primary">
                         <i class="fas fa-play"></i> Começar a Jogar
                     </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Criação/Edição de Tema Personalizado -->
-    <div id="theme-edit-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="theme-modal-title"><i class="fas fa-palette"></i> Criar Tema Personalizado</h2>
-                <span class="close-modal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="upload-instructions">
-                    <p>Crie um tema personalizado com uma imagem. A imagem será dividida em 15 peças e salva como um tema disponível para todos os usuários.</p>
-                    <p><strong>Recomendação:</strong> Use uma imagem quadrada para melhor resultado.</p>
-                </div>
-                <form id="theme-edit-form">
-                    <input type="hidden" id="theme-id">
-                    
-                    <div class="form-group">
-                        <label for="theme-name">Nome do Tema *</label>
-                        <input type="text" id="theme-name" placeholder="Ex: Paisagem, Animal, Arte" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="theme-description">Descrição</label>
-                        <textarea id="theme-description" rows="3" placeholder="Descreva o tema..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="theme-image">Selecione uma imagem *</label>
-                        <input type="file" id="theme-image" accept="image/*" required>
-                        <small class="form-hint">Formatos suportados: JPG, PNG, GIF. Tamanho máximo: 2MB</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary btn-block">
-                            <i class="fas fa-save"></i> Salvar Tema
-                        </button>
-                    </div>
-                </form>
-                <div id="theme-edit-message" class="form-message"></div>
-                
-                <div id="theme-preview-container" style="display:none; margin-top: 20px;">
-                    <h3>Prévia do Tema</h3>
-                    <div class="theme-preview-grid" id="theme-preview-grid">
-                        <!-- Prévia das peças será gerada aqui -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Confirmação -->
-    <div id="confirmation-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-exclamation-triangle"></i> Confirmação</h2>
-                <span class="close-modal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <p id="confirmation-message">Tem certeza que deseja realizar esta ação?</p>
-                <div class="modal-actions">
-                    <button id="confirm-action-btn" class="btn btn-danger">Confirmar</button>
-                    <button id="cancel-action-btn" class="btn btn-secondary">Cancelar</button>
                 </div>
             </div>
         </div>
