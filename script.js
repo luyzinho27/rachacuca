@@ -1239,6 +1239,7 @@ async function handleLogin(e) {
         }
         
         // Fazer login com Firebase Auth
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
@@ -3131,5 +3132,6 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, 'Erro ao criar conta de usuário. Tente novamente.', 'error');
     }
 }
+
 
 
