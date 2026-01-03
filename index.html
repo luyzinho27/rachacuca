@@ -758,44 +758,41 @@
                 
                 <!-- Formulário de Cadastro -->
                 <form id="register-form" class="auth-form">
-                    <div class="form-group">
-                        <label for="register-name">Nome Completo *</label>
-                        <input type="text" id="register-name" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-email">Email *</label>
-                        <input type="email" id="register-email" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-password">Senha *</label>
-                        <input type="password" id="register-password" required minlength="6">
-                        <small class="form-hint">Mínimo de 6 caracteres</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-confirm-password">Confirmar Senha *</label>
-                        <input type="password" id="register-confirm-password" required>
-                    </div>
-                    
-                    <!-- Opção de tipo de usuário (visível apenas se não houver admin no sistema) -->
-                    <div id="register-role-container" class="form-group" style="display: none;">
-                        <label for="register-role">Tipo de Usuário *</label>
-                        <select id="register-role" required>
-                            <option value="player">Jogador</option>
-                            <option value="admin">Administrador</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary btn-block">
-                            <i class="fas fa-user-plus"></i> Criar Conta
-                        </button>
-                    </div>
-                    
-                    <div id="register-message" class="form-message"></div>
-                </form>
+                            <div class="form-group">
+                                <label for="register-name">Nome Completo *</label>
+                                <input type="text" id="register-name" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="register-email">Email *</label>
+                                <input type="email" id="register-email" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="register-password">Senha *</label>
+                                <input type="password" id="register-password" required minlength="6">
+                                <small class="form-hint">Mínimo de 6 caracteres</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="register-confirm-password">Confirmar Senha *</label>
+                                <input type="password" id="register-confirm-password" required>
+                            </div>
+                            
+                            <div class="form-group checkbox-group" id="admin-register-container">
+                                <input type="checkbox" id="register-admin">
+                                <label for="register-admin">Cadastrar como Administrador</label>
+                                <small class="form-hint">Apenas disponível para o primeiro administrador do sistema</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-user-plus"></i> Criar Conta
+                                </button>
+                            </div>
+                            
+                            <div id="register-message" class="form-message"></div>
+                        </form>
                 
                 <!-- Formulário de Recuperação de Senha -->
                 <form id="reset-form" class="auth-form">
@@ -822,58 +819,58 @@
 
     <!-- Modal de Edição de Usuário -->
     <div id="edit-user-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-user-edit"></i> Editar Usuário</h2>
-                <span class="close-modal">&times;</span>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-user-edit"></i> Editar Usuário</h2>
+                        <span class="close-modal">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <form id="edit-user-form">
+                            <input type="hidden" id="edit-user-id">
+                            
+                            <div class="form-group">
+                                <label for="edit-user-name">Nome Completo *</label>
+                                <input type="text" id="edit-user-name" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="edit-user-email">Email *</label>
+                                <input type="email" id="edit-user-email" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="edit-user-role">Tipo de Usuário *</label>
+                                <select id="edit-user-role" required>
+                                    <option value="player">Jogador</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="edit-user-password">Nova Senha (deixe em branco para não alterar)</label>
+                                <input type="password" id="edit-user-password">
+                                <small class="form-hint">Mínimo de 6 caracteres</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="edit-user-status">Status da Conta</label>
+                                <select id="edit-user-status">
+                                    <option value="active">Ativa</option>
+                                    <option value="suspended">Suspensa</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-save"></i> Salvar Alterações
+                                </button>
+                            </div>
+                            
+                            <div id="edit-user-message" class="form-message"></div>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body">
-                <form id="edit-user-form">
-                    <input type="hidden" id="edit-user-id">
-                    
-                    <div class="form-group">
-                        <label for="edit-user-name">Nome Completo *</label>
-                        <input type="text" id="edit-user-name" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-user-email">Email *</label>
-                        <input type="email" id="edit-user-email" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-user-role">Tipo de Usuário *</label>
-                        <select id="edit-user-role" required>
-                            <option value="player">Jogador</option>
-                            <option value="admin">Administrador</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-user-password">Nova Senha (deixe em branco para não alterar)</label>
-                        <input type="password" id="edit-user-password">
-                        <small class="form-hint">Mínimo de 6 caracteres</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-user-status">Status da Conta</label>
-                        <select id="edit-user-status">
-                            <option value="active">Ativa</option>
-                            <option value="suspended">Suspensa</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary btn-block">
-                            <i class="fas fa-save"></i> Salvar Alterações
-                        </button>
-                    </div>
-                    
-                    <div id="edit-user-message" class="form-message"></div>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <!-- Modal de Upload de Imagem -->
     <div id="image-upload-modal" class="modal">
