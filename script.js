@@ -1154,15 +1154,14 @@ function checkAuthState() {
     if (!auth) return;
     
     auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            // Se houver usuário, removemos o estado de visitante e mantemos logado
-            isGuest = false; 
+        if (user && !isGuest) {
+            // Usuário está logado (não é visitante)
             currentUser = user;
+            isGuest = false;
             
-            // Força a exibição da tela principal em vez da welcome
-            welcomeScreen.style.display = 'none';
-            mainApp.classList.add('active');
+            console.log("Usuário logado:", user.email);
             
+            // Atualizar interface para usuário logado
             updateUIForLoggedInUser(user);
             
             // Verificar se o usuário é administrador
@@ -1190,8 +1189,8 @@ function checkAuthState() {
         } else if (!isGuest) {
             // Usuário não está logado e não é visitante
             currentUser = null;
-            // Usuário não está logado e não é visitante
-            showSection('home-section');
+            
+            // Atualizar interface para usuário não logado
             updateUIForLoggedOutUser();
         }
     });
@@ -1330,8 +1329,6 @@ async function handleLogin(e) {
         }
         
         // Fazer login com Firebase Auth
-        // Garante que o usuário permaneça logado mesmo fechando o navegador ou dando F5
-        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
@@ -3287,6 +3284,3 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, errorMessage, 'error');
     }
 }
-
-
-
