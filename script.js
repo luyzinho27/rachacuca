@@ -3250,52 +3250,91 @@ async function clearOldScores() {
 }
 
 // Manipular registro de usuário pelo administrador
-// SOLUÇÃO PARA RECURSO ZERO (SEM CLOUD FUNCTIONS)
 async function handleAdminRegister(e) {
     e.preventDefault();
     
-    // 1. Pega os dados do formulário
-    const name = document.getElementById('admin-reg-name').value;
-    const email = document.getElementById('admin-reg-email').value;
-    const password = document.getElementById('admin-reg-password').value;
-    const role = document.getElementById('admin-reg-role').value; // 'admin' ou 'player'
+    const name = document.getElementById('admin-name').value;
+    const email = document.getElementById('admin-email').value;
+    const password = document.getElementById('admin-password').value;
+    const confirmPassword = document.getElementById('admin-confirm-password').value;
+    const role = document.getElementById('admin-role').value;
     const messageElement = document.getElementById('admin-register-message');
-
+    
+    // Validar entrada
+    if (!name || !email || !password || !confirmPassword || !role) {
+        showFormMessage(messageElement, 'Por favor, preencha todos os campos.', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showFormMessage(messageElement, 'A senha deve ter pelo menos 6 caracteres.', 'error');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        showFormMessage(messageElement, 'As senhas não coincidem.', 'error');
+        return;
+    }
+    
     try {
-        showFormMessage(messageElement, 'Processando cadastro...', 'info');
-
-        // 2. A "MÁGICA": Criar uma instância secundária para não deslogar o Admin Master
-        // Isso permite criar a conta no Auth sem afetar sua sessão atual.
-        const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
-        const secondaryAuth = secondaryApp.auth();
-
-        // 3. Cria o usuário na instância secundária
-        const userCredential = await secondaryAuth.createUserWithEmailAndPassword(email, password);
-        const newUser = userCredential.user;
-
-        // 4. Salva os dados no seu Banco de Dados principal (Firestore)
-        // Como VOCÊ ainda está logado na instância principal, você tem permissão de Admin.
-        await db.collection('users').doc(newUser.uid).set({
-            uid: newUser.uid,
+        showFormMessage(messageElement, 'Criando conta...', 'info');
+        
+        // Verificar se o usuário atual é administrador
+        if (currentUser.role !== 'admin') {
+            showFormMessage(messageElement, 'Apenas administradores podem criar novas contas.', 'error');
+            return;
+        }
+        
+        // Criar usuário com Firebase Auth
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        // Atualizar nome de exibição
+        await user.updateProfile({
+            displayName: name
+        });
+        
+        // Criar documento do usuário no Firestore
+        const userData = {
+            uid: user.uid,
             email: email,
             name: name,
             role: role,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             createdBy: currentUser.uid,
             status: 'active'
-        });
-
-        // 5. Finaliza e limpa a instância secundária
-        await secondaryAuth.signOut();
-        await secondaryApp.delete();
-
+        };
+        
+        await db.collection('users').doc(user.uid).set(userData);
+        
         showFormMessage(messageElement, 'Usuário cadastrado com sucesso!', 'success');
-        adminRegisterForm.reset();
-        loadAdminUsers(); // Recarrega a lista
-
+        
+        // Limpar formulário após 3 segundos
+        setTimeout(() => {
+            adminRegisterForm.reset();
+            clearFormMessage(messageElement);
+            
+            // Recarregar lista de usuários
+            loadAdminUsers();
+        }, 3000);
+        
     } catch (error) {
-        console.error("Erro no cadastro:", error);
-        showFormMessage(messageElement, "Erro: " + error.message, 'error');
+        console.error("Erro ao criar conta de usuário:", error);
+        
+        let errorMessage = 'Erro ao criar conta de usuário. ';
+        switch (error.code) {
+            case 'auth/email-already-in-use':
+                errorMessage += 'Este email já está em uso.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage += 'Email inválido.';
+                break;
+            default:
+                errorMessage += 'Tente novamente mais tarde.';
+        }
+        
+        showFormMessage(messageElement, errorMessage, 'error');
     }
 }
+
 
