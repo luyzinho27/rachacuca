@@ -1189,6 +1189,8 @@ function checkAuthState() {
             }
         } else if (!isGuest) {
             // Usuário não está logado e não é visitante
+            currentUser = null;
+            // Usuário não está logado e não é visitante
             showSection('home-section');
             updateUIForLoggedOutUser();
         }
@@ -3285,5 +3287,6 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, errorMessage, 'error');
     }
 }
+
 
 
