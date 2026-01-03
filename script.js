@@ -3109,3 +3109,4 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, 'Erro ao criar conta de usuário. Tente novamente.', 'error');
     }
 }
+
