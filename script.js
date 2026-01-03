@@ -3253,7 +3253,13 @@ async function clearOldScores() {
 // Localize a função handleAdminRegister no seu script.js e substitua por esta:
 async function handleAdminRegister(e) {
     e.preventDefault();
-    
+    const password = document.getElementById('admin-reg-password').value;
+const confirmPassword = document.getElementById('admin-confirm-password').value;
+
+if (password !== confirmPassword) {
+    showFormMessage(messageElement, "As senhas não conferem!", 'error');
+    return; // Para o código aqui mesmo
+}
     // Captura dos elementos usando os IDs novos do HTML
     const name = document.getElementById('admin-reg-name').value;
     const email = document.getElementById('admin-reg-email').value;
@@ -3269,7 +3275,20 @@ async function handleAdminRegister(e) {
             if (firebase.app("Secondary")) {
                 await firebase.app("Secondary").delete();
             }
-        } catch (err) {}
+        } catch (error) {
+    console.error("Erro detalhado:", error);
+    
+    let errorMessage = "Erro: ";
+    if (error.code === 'auth/email-already-in-use') {
+        errorMessage += "Este e-mail já está cadastrado. Vá no console do Firebase e delete o usuário para testar novamente.";
+    } else if (error.code === 'auth/weak-password') {
+        errorMessage += "A senha é muito fraca (mínimo 6 caracteres).";
+    } else {
+        errorMessage += error.message;
+    }
+    
+    showFormMessage(messageElement, errorMessage, 'error');
+}
 
         // Cria uma nova instância para registrar o usuário sem deslogar VOCÊ
         const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
@@ -3303,3 +3322,4 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, "Erro: " + error.message, 'error');
     }
 }
+
