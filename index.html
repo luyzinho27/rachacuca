@@ -758,47 +758,41 @@
                 
                 <!-- Formulário de Cadastro -->
                 <form id="register-form" class="auth-form">
-                    <div class="form-group">
-                        <label for="register-name">Nome Completo *</label>
-                        <input type="text" id="register-name" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-email">Email *</label>
-                        <input type="email" id="register-email" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-password">Senha *</label>
-                        <input type="password" id="register-password" required minlength="6">
-                        <small class="form-hint">Mínimo de 6 caracteres</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-confirm-password">Confirmar Senha *</label>
-                        <input type="password" id="register-confirm-password" required>
-                    </div>
-                    
-                    <!-- Opção de tipo de usuário para primeiro administrador -->
-                    <div id="register-role-container" class="form-group" style="display: none;">
-                        <label for="register-role">Tipo de Usuário</label>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="register-role-admin">
-                            <label for="register-role-admin" class="checkbox-label">
-                                Cadastrar como Administrador
-                            </label>
-                        </div>
-                        <small class="form-hint">Apenas disponível para o primeiro administrador do sistema</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary btn-block">
-                            <i class="fas fa-user-plus"></i> Criar Conta
-                        </button>
-                    </div>
-                    
-                    <div id="register-message" class="form-message"></div>
-                </form>
+                            <div class="form-group">
+                                <label for="register-name">Nome Completo *</label>
+                                <input type="text" id="register-name" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="register-email">Email *</label>
+                                <input type="email" id="register-email" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="register-password">Senha *</label>
+                                <input type="password" id="register-password" required minlength="6">
+                                <small class="form-hint">Mínimo de 6 caracteres</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="register-confirm-password">Confirmar Senha *</label>
+                                <input type="password" id="register-confirm-password" required>
+                            </div>
+                            
+                            <div class="form-group checkbox-group" id="admin-register-container">
+                                <input type="checkbox" id="register-admin">
+                                <label for="register-admin">Cadastrar como Administrador</label>
+                                <small class="form-hint">Apenas disponível para o primeiro administrador do sistema</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-user-plus"></i> Criar Conta
+                                </button>
+                            </div>
+                            
+                            <div id="register-message" class="form-message"></div>
+                        </form>
                 
                 <!-- Formulário de Recuperação de Senha -->
                 <form id="reset-form" class="auth-form">
@@ -1036,3 +1030,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
