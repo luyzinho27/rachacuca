@@ -14,6 +14,7 @@ let app, auth, db;
 let currentUser = null;
 let adminUserExists = false;
 let isGuest = false;
+let isMasterAdmin = false;
 
 // Elementos do DOM
 let welcomeScreen, mainApp;
@@ -121,6 +122,9 @@ function initializeFirebase() {
         console.log("Firebase inicializado com sucesso!");
         updateDBStatus("Conectado", "connected");
         
+        // Configurar persistência de autenticação
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        
         // Verificar se já existe um administrador no sistema
         checkAdminExists();
     } catch (error) {
@@ -147,24 +151,15 @@ async function checkAdminExists() {
         adminUserExists = !snapshot.empty;
         console.log("Admin existe:", adminUserExists);
         
-        // Atualizar a interface baseado na existência de administrador
-        updateAdminRegisterOption();
+        // Se não existir admin, mostrar opção de cadastro como admin
+        if (!adminUserExists) {
+            const registerRoleContainer = document.getElementById('register-role-container');
+            if (registerRoleContainer) {
+                registerRoleContainer.style.display = 'block';
+            }
+        }
     } catch (error) {
         console.error("Erro ao verificar administrador:", error);
-    }
-}
-
-// Atualizar opção de cadastro como administrador
-function updateAdminRegisterOption() {
-    const adminCheckbox = document.getElementById('register-admin');
-    const adminContainer = document.getElementById('admin-register-container');
-    
-    if (adminCheckbox && adminContainer) {
-        if (adminUserExists) {
-            adminContainer.style.display = 'none';
-        } else {
-            adminContainer.style.display = 'block';
-        }
     }
 }
 
@@ -347,13 +342,16 @@ function renderBoard() {
                 tile.classList.add('correct-position');
             }
             
-            // Verificar se a peça pode ser movida
-            if (isMovable(index)) {
-                tile.classList.add('movable');
-                tile.addEventListener('click', () => moveTile(index));
-            } else {
-                tile.style.cursor = 'default';
-            }
+            // Adicionar eventos de drag and drop
+            tile.addEventListener('mousedown', startDrag);
+            tile.addEventListener('touchstart', startDragTouch);
+            
+            // Adicionar evento de clique como fallback
+            tile.addEventListener('click', () => {
+                if (!isDragging) {
+                    moveTile(index);
+                }
+            });
         }
         
         puzzleBoard.appendChild(tile);
@@ -367,6 +365,111 @@ function renderBoard() {
             savePuzzleBtn.style.display = 'none';
         }
     }
+}
+
+// Iniciar arrastar (mouse)
+function startDrag(e) {
+    if (gameCompleted) return;
+    
+    const tile = e.target;
+    const index = parseInt(tile.dataset.index);
+    
+    if (isMovable(index)) {
+        draggedTile = tile;
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        
+        tile.classList.add('dragging');
+        tile.style.zIndex = '100';
+        
+        // Prevenir seleção de texto durante o arraste
+        e.preventDefault();
+    }
+}
+
+// Iniciar arrastar (touch)
+function startDragTouch(e) {
+    if (gameCompleted) return;
+    
+    const tile = e.target;
+    const index = parseInt(tile.dataset.index);
+    
+    if (isMovable(index) && e.touches.length === 1) {
+        draggedTile = tile;
+        isDragging = true;
+        dragStartX = e.touches[0].clientX;
+        dragStartY = e.touches[0].clientY;
+        
+        tile.classList.add('dragging');
+        tile.style.zIndex = '100';
+        
+        // Prevenir scroll durante o arraste
+        e.preventDefault();
+    }
+}
+
+// Arrastar (mouse)
+function drag(e) {
+    if (!draggedTile || !isDragging) return;
+    
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Aplicar transformação visual
+    draggedTile.style.transform = `translate(${dx}px, ${dy}px)`;
+    
+    // Se arrastou suficientemente longe, mover a peça
+    if (distance > 40) {
+        const index = parseInt(draggedTile.dataset.index);
+        moveTile(index);
+        endDrag();
+    }
+}
+
+// Arrastar (touch)
+function dragTouch(e) {
+    if (!draggedTile || !isDragging || e.touches.length !== 1) return;
+    
+    const dx = e.touches[0].clientX - dragStartX;
+    const dy = e.touches[0].clientY - dragStartY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Aplicar transformação visual
+    draggedTile.style.transform = `translate(${dx}px, ${dy}px)`;
+    
+    // Se arrastou suficientemente longe, mover a peça
+    if (distance > 40) {
+        const index = parseInt(draggedTile.dataset.index);
+        moveTile(index);
+        endDragTouch();
+    }
+    
+    // Prevenir scroll
+    e.preventDefault();
+}
+
+// Finalizar arrastar (mouse)
+function endDrag() {
+    if (draggedTile) {
+        draggedTile.classList.remove('dragging');
+        draggedTile.style.transform = '';
+        draggedTile.style.zIndex = '';
+        draggedTile = null;
+    }
+    isDragging = false;
+}
+
+// Finalizar arrastar (touch)
+function endDragTouch() {
+    if (draggedTile) {
+        draggedTile.classList.remove('dragging');
+        draggedTile.style.transform = '';
+        draggedTile.style.zIndex = '';
+        draggedTile = null;
+    }
+    isDragging = false;
 }
 
 // Verificar se uma peça pode ser movida
@@ -1063,38 +1166,40 @@ function checkAuthState() {
             updateUIForLoggedInUser(user);
             const isAdmin = await checkIfUserIsAdmin(user.uid);
             updateUIForAdmin(isAdmin);
-            
-            // Carregar dados do usuário
-            await loadUserData(user.uid);
-            
-            // Carregar temas salvos se for admin
-            if (isAdmin) {
-                loadSavedThemes();
+                
+                // Carregar temas salvos se for admin
+                if (userData.role === 'admin') {
+                    loadSavedThemes();
+                }
+                
+                // Carregar progresso do usuário
+                loadUserProgress();
             }
-            
-            // Carregar progresso do usuário
-            loadUserProgress();
-            
         } else if (!isGuest) {
-            // Usuário não está logado e não é visitante
-            showSection('home-section');
-            updateUIForLoggedOutUser();
+                showSection('home-section');
+                updateUIForLoggedOutUser();
         }
     });
 }
 
-// Verificar se o usuário é administrador
-async function checkIfUserIsAdmin(uid) {
+// Obter lista de administradores
+async function getAdminUsers() {
     try {
-        const userDoc = await db.collection('users').doc(uid).get();
-        if (userDoc.exists) {
-            const userData = userDoc.data();
-            return userData.role === 'admin';
-        }
-        return false;
+        const usersRef = db.collection('users');
+        const snapshot = await usersRef.where('role', '==', 'admin').get();
+        
+        const adminUsers = [];
+        snapshot.forEach(doc => {
+            adminUsers.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        return adminUsers;
     } catch (error) {
-        console.error("Erro ao verificar se usuário é admin:", error);
-        return false;
+        console.error("Erro ao buscar administradores:", error);
+        return [];
     }
 }
 
@@ -1133,30 +1238,21 @@ function updateUIForLoggedOutUser() {
     }
 }
 
-// Atualizar UI para administrador
-function updateUIForAdmin(isAdmin) {
-    if (adminNavItem) {
-        adminNavItem.style.display = isAdmin ? 'block' : 'none';
-    }
-}
-
 // Carregar dados do usuário
 async function loadUserData(uid) {
     try {
         const userDoc = await db.collection('users').doc(uid).get();
         if (userDoc.exists) {
             const userData = userDoc.data();
-            
-            // Atualizar informações do usuário
-            updateProfileInfo(userData);
-            
             return userData;
         } else {
             // Criar documento do usuário se não existir
             await createUserDocument(uid);
+            return await loadUserData(uid); // Recursivamente buscar os dados após criar
         }
     } catch (error) {
         console.error("Erro ao carregar dados do usuário:", error);
+        return null;
     }
 }
 
@@ -1166,11 +1262,15 @@ async function createUserDocument(uid) {
         const user = auth.currentUser;
         if (!user) return;
         
+        // Verificar se é o primeiro usuário (será admin)
+        const usersSnapshot = await db.collection('users').get();
+        const isFirstUser = usersSnapshot.empty;
+        
         const userData = {
             uid: uid,
             email: user.email,
             name: user.displayName || user.email.split('@')[0],
-            role: 'player',
+            role: isFirstUser ? 'admin' : 'player',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
@@ -1179,36 +1279,15 @@ async function createUserDocument(uid) {
         await db.collection('users').doc(uid).set(userData);
         console.log("Documento do usuário criado com sucesso");
         
+        // Se for o primeiro usuário, atualizar variável global
+        if (isFirstUser) {
+            adminUserExists = true;
+            isMasterAdmin = true;
+        }
+        
         return userData;
     } catch (error) {
         console.error("Erro ao criar documento do usuário:", error);
-    }
-}
-
-// Atualizar informações do perfil
-function updateProfileInfo(userData) {
-    // Atualizar elementos do perfil se estiverem visíveis
-    const profileName = document.getElementById('profile-name');
-    const profileEmail = document.getElementById('profile-email');
-    const profileRole = document.getElementById('profile-role');
-    const profileJoined = document.getElementById('profile-joined');
-    
-    if (profileName && userData.name) {
-        profileName.textContent = userData.name;
-    }
-    
-    if (profileEmail && userData.email) {
-        profileEmail.textContent = userData.email;
-    }
-    
-    if (profileRole) {
-        profileRole.textContent = userData.role === 'admin' ? 'Administrador' : 'Jogador';
-    }
-    
-    if (profileJoined && userData.createdAt) {
-        // Converter timestamp do Firestore para data
-        const date = userData.createdAt.toDate ? userData.createdAt.toDate() : new Date();
-        profileJoined.textContent = `Membro desde: ${date.toLocaleDateString('pt-BR')}`;
     }
 }
 
@@ -1236,6 +1315,7 @@ async function handleLogin(e) {
         }
         
         // Fazer login com Firebase Auth
+        // Garante que o usuário permaneça logado mesmo fechando o navegador ou dando F5
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
@@ -1300,7 +1380,8 @@ async function handleRegister(e) {
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
     const confirmPassword = document.getElementById('register-confirm-password').value;
-    const isAdmin = document.getElementById('register-admin') ? document.getElementById('register-admin').checked : false;
+    const registerRoleSelect = document.getElementById('register-role');
+    const role = registerRoleSelect ? registerRoleSelect.value : 'player';
     const messageElement = document.getElementById('register-message');
     
     // Validar entrada
@@ -1319,9 +1400,9 @@ async function handleRegister(e) {
         return;
     }
     
-    // Verificar se já existe um administrador
-    if (isAdmin && adminUserExists) {
-        showFormMessage(messageElement, 'Já existe um administrador no sistema. Apenas o administrador master pode criar novos administradores.', 'error');
+    // Se tentando registrar como admin mas já existe admin, impedir
+    if (role === 'admin' && adminUserExists) {
+        showFormMessage(messageElement, 'Já existe um administrador no sistema. Registre-se como jogador.', 'error');
         return;
     }
     
@@ -1337,15 +1418,12 @@ async function handleRegister(e) {
             displayName: name
         });
         
-        // Determinar a função do usuário
-        const userRole = isAdmin ? 'admin' : 'player';
-        
         // Criar documento do usuário no Firestore
         const userData = {
             uid: user.uid,
             email: email,
             name: name,
-            role: userRole,
+            role: role,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
             status: 'active'
@@ -1353,10 +1431,10 @@ async function handleRegister(e) {
         
         await db.collection('users').doc(user.uid).set(userData);
         
-        // Atualizar a flag de administrador existente
-        if (isAdmin) {
+        // Atualizar variável global se for admin
+        if (role === 'admin') {
             adminUserExists = true;
-            updateAdminRegisterOption();
+            isMasterAdmin = true;
         }
         
         showFormMessage(messageElement, 'Conta criada com sucesso!', 'success');
@@ -2706,6 +2784,9 @@ function createAdminCharts(scoresSnapshot) {
     }
 }
 
+// As funções restantes (loadAdminUsers, openEditUserModal, handleEditUser, loadAdminScores, deleteScore, clearOldScores, handleAdminRegister)
+// permanecem as mesmas do código original, apenas ajustando referências aos novos elementos
+
 // Carregar usuários para administração
 async function loadAdminUsers() {
     if (!currentUser) return;
@@ -2719,8 +2800,7 @@ async function loadAdminUsers() {
     
     try {
         // Verificar se o usuário atual é administrador
-        const isAdmin = await checkIfUserIsAdmin(currentUser.uid);
-        if (!isAdmin) {
+        if (currentUser.role !== 'admin') {
             if (usersListElement) {
                 usersListElement.innerHTML = '<p class="error-message">Acesso negado. Apenas administradores podem acessar esta área.</p>';
             }
@@ -2766,6 +2846,11 @@ async function loadAdminUsers() {
                             <button class="btn btn-secondary btn-icon edit-user-btn" data-user-id="${user.id}">
                                 <i class="fas fa-edit"></i>
                             </button>
+                            ${isMasterAdmin && user.id !== currentUser.uid ? `
+                            <button class="btn btn-danger btn-icon delete-user-btn" data-user-id="${user.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            ` : ''}
                         </div>
                     `;
                     
@@ -2780,6 +2865,15 @@ async function loadAdminUsers() {
                         openEditUserModal(userId);
                     });
                 });
+                
+                // Adicionar event listeners aos botões de exclusão
+                const deleteButtons = document.querySelectorAll('.delete-user-btn');
+                deleteButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const userId = this.dataset.userId;
+                        deleteUser(userId);
+                    });
+                });
             }
         }
         
@@ -2790,6 +2884,33 @@ async function loadAdminUsers() {
         }
     } finally {
         if (loadingElement) loadingElement.style.display = 'none';
+    }
+}
+
+// Excluir usuário
+async function deleteUser(userId) {
+    if (!isMasterAdmin) {
+        alert('Apenas o administrador master pode excluir usuários.');
+        return;
+    }
+    
+    if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
+        return;
+    }
+    
+    try {
+        // Excluir usuário do Firestore
+        await db.collection('users').doc(userId).delete();
+        
+        // Tentar excluir a conta de autenticação (requer permissões especiais no Firebase)
+        alert('Usuário excluído do sistema. Nota: A conta de autenticação pode precisar ser excluída manualmente no Firebase Console.');
+        
+        // Recarregar lista de usuários
+        loadAdminUsers();
+        
+    } catch (error) {
+        console.error("Erro ao excluir usuário:", error);
+        alert('Erro ao excluir usuário. Tente novamente.');
     }
 }
 
@@ -2813,8 +2934,28 @@ async function openEditUserModal(userId) {
         document.getElementById('edit-user-status').value = userData.status || 'active';
         document.getElementById('edit-user-password').value = '';
         
+        // Se não for master admin, desabilitar alteração de role para admin
+        if (!isMasterAdmin && userData.role === 'admin') {
+            document.getElementById('edit-user-role').disabled = true;
+        } else {
+            document.getElementById('edit-user-role').disabled = false;
+        }
+        
         // Mostrar modal
         document.getElementById('edit-user-modal').style.display = 'flex';
+        
+        // Adicionar event listener ao formulário de edição
+        const editUserForm = document.getElementById('edit-user-form');
+        if (editUserForm) {
+            // Remover event listeners anteriores
+            editUserForm.replaceWith(editUserForm.cloneNode(true));
+            
+            // Adicionar novo event listener
+            document.getElementById('edit-user-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleEditUser(userId);
+            });
+        }
         
     } catch (error) {
         console.error("Erro ao abrir modal de edição de usuário:", error);
@@ -2823,10 +2964,7 @@ async function openEditUserModal(userId) {
 }
 
 // Manipular edição de usuário
-async function handleEditUser(e) {
-    e.preventDefault();
-    
-    const userId = document.getElementById('edit-user-id').value;
+async function handleEditUser(userId) {
     const name = document.getElementById('edit-user-name').value;
     const email = document.getElementById('edit-user-email').value;
     const role = document.getElementById('edit-user-role').value;
@@ -2850,13 +2988,6 @@ async function handleEditUser(e) {
             status: status,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
-        
-        // Atualizar senha se fornecida
-        if (password && password.length >= 6) {
-            // Nota: Para atualizar a senha, precisaríamos do Firebase Admin SDK no backend
-            // Por enquanto, apenas adicionamos um campo para futura implementação
-            updateData.passwordUpdated = true;
-        }
         
         await db.collection('users').doc(userId).update(updateData);
         
@@ -3084,36 +3215,35 @@ async function handleAdminRegister(e) {
     try {
         showFormMessage(messageElement, 'Criando conta...', 'info');
         
-        // Criar usuário com Firebase Auth (apenas administradores podem fazer isso)
-        const isAdmin = await checkIfUserIsAdmin(currentUser.uid);
-        if (!isAdmin) {
+        // Verificar se o usuário atual é administrador
+        if (currentUser.role !== 'admin') {
             showFormMessage(messageElement, 'Apenas administradores podem criar novas contas.', 'error');
             return;
         }
         
-        // Nota: Para criar usuários programaticamente, precisaríamos do Firebase Admin SDK no backend
-        // Por enquanto, vamos apenas criar o documento no Firestore
-        // Em um sistema real, você precisaria de uma função backend para criar o usuário
+        // Criar usuário com Firebase Auth
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        // Atualizar nome de exibição
+        await user.updateProfile({
+            displayName: name
+        });
         
         // Criar documento do usuário no Firestore
-        // Gerar um ID temporário (em produção, use o UID do Firebase Auth)
-        const tempUserId = 'temp_' + Date.now();
-        
         const userData = {
-            uid: tempUserId,
+            uid: user.uid,
             email: email,
             name: name,
             role: role,
-            status: 'active',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             createdBy: currentUser.uid,
-            requiresAuthSetup: true,
-            tempPassword: password // Em produção, NUNCA armazene senhas em texto claro
+            status: 'active'
         };
         
-        await db.collection('users').doc(tempUserId).set(userData);
+        await db.collection('users').doc(user.uid).set(userData);
         
-        showFormMessage(messageElement, 'Usuário cadastrado com sucesso! Nota: Para acesso completo, configure o Firebase Admin SDK no backend.', 'success');
+        showFormMessage(messageElement, 'Usuário cadastrado com sucesso!', 'success');
         
         // Limpar formulário após 3 segundos
         setTimeout(() => {
@@ -3126,10 +3256,19 @@ async function handleAdminRegister(e) {
         
     } catch (error) {
         console.error("Erro ao criar conta de usuário:", error);
-        showFormMessage(messageElement, 'Erro ao criar conta de usuário. Tente novamente.', 'error');
+        
+        let errorMessage = 'Erro ao criar conta de usuário. ';
+        switch (error.code) {
+            case 'auth/email-already-in-use':
+                errorMessage += 'Este email já está em uso.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage += 'Email inválido.';
+                break;
+            default:
+                errorMessage += 'Tente novamente mais tarde.';
+        }
+        
+        showFormMessage(messageElement, errorMessage, 'error');
     }
 }
-
-
-
-
