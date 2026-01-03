@@ -1329,6 +1329,8 @@ async function handleLogin(e) {
         }
         
         // Fazer login com Firebase Auth
+        // Garante que o usuário permaneça logado mesmo fechando o navegador ou dando F5
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
@@ -3284,3 +3286,4 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, errorMessage, 'error');
     }
 }
+
