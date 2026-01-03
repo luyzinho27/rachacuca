@@ -3253,65 +3253,56 @@ async function clearOldScores() {
 // Localize a função handleAdminRegister no seu script.js e substitua por esta:
 async function handleAdminRegister(e) {
     e.preventDefault();
-    // Captura dos elementos usando os IDs novos do HTML
-    const name = document.getElementById('admin-reg-name').value;
-    const email = document.getElementById('admin-reg-email').value;
-    const password = document.getElementById('admin-reg-password').value;
-    const role = document.getElementById('admin-reg-role').value;
-    const messageElement = document.getElementById('admin-register-message');
+    
+    // Capturamos os IDs específicos do Admin
+    const nameEl = document.getElementById('admin-reg-name');
+    const emailEl = document.getElementById('admin-reg-email');
+    const passEl = document.getElementById('admin-reg-password');
+    const confEl = document.getElementById('admin-reg-confirm-password');
+    const roleEl = document.getElementById('admin-reg-role');
+    const msgEl = document.getElementById('admin-register-message');
+
+    // VALIDAÇÃO DE SEGURANÇA: Se o campo não existir, avisa no console em vez de travar o site
+    if (!confEl) {
+        console.error("Erro Crítico: O campo 'admin-reg-confirm-password' não foi encontrado no HTML.");
+        return;
+    }
+
+    if (passEl.value !== confEl.value) {
+        showFormMessage(msgEl, "As senhas administrativas não coincidem!", 'error');
+        return;
+    }
 
     try {
-        showFormMessage(messageElement, 'Processando cadastro...', 'info');
+        showFormMessage(msgEl, 'Processando...', 'info');
 
-        // Mata qualquer instância "Secondary" aberta anteriormente para evitar erro de inicialização
-        try {
-            if (firebase.app("Secondary")) {
-                await firebase.app("Secondary").delete();
-            }
-        } catch (err) {}
+        // Limpeza de instâncias secundárias
+        if (firebase.apps.length > 1) {
+            await firebase.app("Secondary").delete();
+        }
 
-        // Cria uma nova instância para registrar o usuário sem deslogar VOCÊ
         const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
-        const secondaryAuth = secondaryApp.auth();
-
-        const userCredential = await secondaryAuth.createUserWithEmailAndPassword(email, password);
-        const newUser = userCredential.user;
-
-        // Grava no Firestore usando o "db" principal (onde você está autenticado como Admin)
-        await db.collection('users').doc(newUser.uid).set({
-            uid: newUser.uid,
-            email: email,
-            name: name,
-            role: role,
+        const userCredential = await secondaryApp.auth().createUserWithEmailAndPassword(emailEl.value, passEl.value);
+        
+        // Salva no Firestore usando a sessão do Admin Master (instância principal)
+        await db.collection('users').doc(userCredential.user.uid).set({
+            uid: userCredential.user.uid,
+            name: nameEl.value,
+            email: emailEl.value,
+            role: roleEl.value,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            createdBy: currentUser.uid,
             status: 'active'
         });
 
-        // Limpa a instância secundária
-        await secondaryAuth.signOut();
         await secondaryApp.delete();
-
-        showFormMessage(messageElement, 'Usuário cadastrado com sucesso!', 'success');
-        document.getElementById('admin-register-form').reset();
-        
-        if (typeof loadAdminUsers === 'function') loadAdminUsers();
+        showFormMessage(msgEl, 'Usuário criado com sucesso!', 'success');
+        e.target.reset();
 
     } catch (error) {
-    console.error("Erro detalhado:", error);
-    
-    let errorMessage = "Erro: ";
-    if (error.code === 'auth/email-already-in-use') {
-        errorMessage += "Este e-mail já está cadastrado. Vá no console do Firebase e delete o usuário para testar novamente.";
-    } else if (error.code === 'auth/weak-password') {
-        errorMessage += "A senha é muito fraca (mínimo 6 caracteres).";
-    } else {
-        errorMessage += error.message;
+        showFormMessage(msgEl, "Erro: " + error.message, 'error');
     }
-    
-    showFormMessage(messageElement, errorMessage, 'error');
 }
-}
+
 
 
 
