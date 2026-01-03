@@ -52,7 +52,6 @@ let draggedTile = null;
 let isDragging = false;
 let dragStartX = 0;
 let dragStartY = 0;
-let adminRegisterForm;
 
 // Temas disponíveis
 const themes = {
@@ -118,11 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Verificar se há um usuário salvo no localStorage
     checkRememberedUser();
-    adminRegisterForm = document.getElementById('admin-register-form');
-if (adminRegisterForm) {
-    adminRegisterForm.addEventListener('submit', handleAdminRegister);
-}
-  
 });
 
 // Inicializar Firebase
@@ -3259,50 +3253,86 @@ async function clearOldScores() {
 async function handleAdminRegister(e) {
     e.preventDefault();
     
-    const name = document.getElementById('admin-reg-name').value;
-    const email = document.getElementById('admin-reg-email').value;
-    const password = document.getElementById('admin-reg-password').value;
-    const role = document.getElementById('admin-reg-role').value;
+    const name = document.getElementById('admin-name').value;
+    const email = document.getElementById('admin-email').value;
+    const password = document.getElementById('admin-password').value;
+    const confirmPassword = document.getElementById('admin-confirm-password').value;
+    const role = document.getElementById('admin-role').value;
     const messageElement = document.getElementById('admin-register-message');
-
+    
+    // Validar entrada
+    if (!name || !email || !password || !confirmPassword || !role) {
+        showFormMessage(messageElement, 'Por favor, preencha todos os campos.', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showFormMessage(messageElement, 'A senha deve ter pelo menos 6 caracteres.', 'error');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        showFormMessage(messageElement, 'As senhas não coincidem.', 'error');
+        return;
+    }
+    
     try {
-        showFormMessage(messageElement, 'Processando...', 'info');
-
-        // VERIFICAÇÃO CRÍTICA: Se já existe a instância secundária, deleta para não dar erro
-        try {
-            if (firebase.app("Secondary")) {
-                await firebase.app("Secondary").delete();
-            }
-        } catch (e) { /* Não existia, segue o jogo */ }
-
-        // Inicializa instância secundária para NÃO deslogar o Admin Master
-        const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
+        showFormMessage(messageElement, 'Criando conta...', 'info');
         
-        // Cria o usuário
-        const userCredential = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
-        const newUser = userCredential.user;
-
-        // Grava no Firestore usando o 'db' da instância principal (onde você é Admin)
-        await db.collection('users').doc(newUser.uid).set({
-            uid: newUser.uid,
-            name: name,
+        // Verificar se o usuário atual é administrador
+        if (currentUser.role !== 'admin') {
+            showFormMessage(messageElement, 'Apenas administradores podem criar novas contas.', 'error');
+            return;
+        }
+        
+        // Criar usuário com Firebase Auth
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        // Atualizar nome de exibição
+        await user.updateProfile({
+            displayName: name
+        });
+        
+        // Criar documento do usuário no Firestore
+        const userData = {
+            uid: user.uid,
             email: email,
+            name: name,
             role: role,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy: currentUser.uid,
             status: 'active'
-        });
-
-        // Limpa a sujeira
-        await secondaryApp.auth().signOut();
-        await secondaryApp.delete();
-
-        showFormMessage(messageElement, 'Cadastrado com sucesso!', 'success');
-        adminRegisterForm.reset();
-
+        };
+        
+        await db.collection('users').doc(user.uid).set(userData);
+        
+        showFormMessage(messageElement, 'Usuário cadastrado com sucesso!', 'success');
+        
+        // Limpar formulário após 3 segundos
+        setTimeout(() => {
+            adminRegisterForm.reset();
+            clearFormMessage(messageElement);
+            
+            // Recarregar lista de usuários
+            loadAdminUsers();
+        }, 3000);
+        
     } catch (error) {
-        console.error(error);
-        showFormMessage(messageElement, "Erro: " + error.message, 'error');
+        console.error("Erro ao criar conta de usuário:", error);
+        
+        let errorMessage = 'Erro ao criar conta de usuário. ';
+        switch (error.code) {
+            case 'auth/email-already-in-use':
+                errorMessage += 'Este email já está em uso.';
+                break;
+            case 'auth/invalid-email':
+                errorMessage += 'Email inválido.';
+                break;
+            default:
+                errorMessage += 'Tente novamente mais tarde.';
+        }
+        
+        showFormMessage(messageElement, errorMessage, 'error');
     }
 }
-
-
