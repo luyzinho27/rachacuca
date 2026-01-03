@@ -630,33 +630,32 @@
                             <p class="form-info">Como administrador, você pode cadastrar novos usuários (jogadores ou administradores).</p>
                             
                             <form id="admin-register-form" class="auth-form" style="display: block !important;">
-    <div class="form-group">
-        <label for="admin-reg-name">Nome Completo *</label>
-        <input type="text" id="admin-reg-name" required> </div>
-    
-    <div class="form-group">
-        <label for="admin-reg-email">Email *</label>
-        <input type="email" id="admin-reg-email" required> </div>
-    
-    <div class="form-group">
-        <label for="admin-reg-password">Senha *</label>
-        <input type="password" id="admin-reg-password" required minlength="6"> </div>
-
-    <div class="form-group">
-        <label for="admin-reg-role">Tipo de Usuário *</label>
-        <select id="admin-reg-role" required> <option value="player">Jogador</option>
-            <option value="admin">Administrador</option>
-        </select>
-    </div>
-    
-    <div class="form-group">
-        <button type="submit" class="btn btn-primary btn-block">
-            <i class="fas fa-user-plus"></i> Cadastrar Usuário
-        </button>
-    </div>
-    
-    <div id="admin-register-message" class="form-message"></div>
-</form>
+                            <div class="form-group">
+                                <label for="admin-reg-name">Nome Completo *</label>
+                                <input type="text" id="admin-reg-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-reg-email">Email *</label>
+                                <input type="email" id="admin-reg-email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-reg-password">Senha *</label>
+                                <input type="password" id="admin-reg-password" required minlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-reg-confirm-password">Confirmar Senha *</label>
+                                <input type="password" id="admin-reg-confirm-password" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-reg-role">Tipo de Usuário *</label>
+                                <select id="admin-reg-role" required>
+                                    <option value="player">Jogador</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Cadastrar Usuário</button>
+                            <div id="admin-register-message" class="form-message"></div>
+                        </form>
                         </div>
                         
                         <!-- Aba: Estatísticas Avançadas -->
