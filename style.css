@@ -2165,4 +2165,40 @@ body {
     }
 }
 
+/* ----Centralizar e limitar a largura do formulário de cadastro no painel admin---- */
+#admin-register-form.auth-form {
+    max-width: 500px;      /* Largura máxima ideal para leitura */
+    margin: 20px auto;    /* Centraliza o formulário horizontalmente */
+    padding: 30px;
+    background-color: #fff;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+/* Ajuste para telas menores (Responsividade) */
+@media (max-width: 768px) {
+    #admin-register-form.auth-form {
+        max-width: 100%;   /* Em celulares, ele volta a ocupar a largura disponível */
+        padding: 20px;
+        box-shadow: none;  /* Remove sombra em telas pequenas para economizar espaço visual */
+        border: 1px solid var(--gray-light);
+    }
+}
+/* Melhoria visual para os grupos de formulário */
+.admin-tab-content .form-group {
+    margin-bottom: 20px;
+    text-align: left;     /* Garante que labels fiquem alinhados à esquerda */
+}
 
+.admin-tab-content h3 {
+    text-align: center;   /* Centraliza o título da aba para combinar com o formulário */
+    margin-bottom: 10px;
+}
+
+.admin-tab-content .form-info {
+    text-align: center;
+    margin-bottom: 25px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    color: var(--gray);
+}
