@@ -1154,18 +1154,29 @@ function checkAuthState() {
     if (!auth) return;
     
     auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            // Se houver usuário, removemos o estado de visitante e mantemos logado
-            isGuest = false; 
+        if (user && !isGuest) {
+            // Usuário está logado (não é visitante)
             currentUser = user;
+            isGuest = false;
             
-            // Força a exibição da tela principal em vez da welcome
-            welcomeScreen.style.display = 'none';
-            mainApp.classList.add('active');
+            console.log("Usuário logado:", user.email);
             
+            // Atualizar interface para usuário logado
             updateUIForLoggedInUser(user);
-            const isAdmin = await checkIfUserIsAdmin(user.uid);
-            updateUIForAdmin(isAdmin);
+            
+            // Verificar se o usuário é administrador
+            const userData = await loadUserData(user.uid);
+            if (userData) {
+                currentUser.role = userData.role;
+                currentUser.status = userData.status;
+                
+                // Verificar se é o primeiro admin (master)
+                if (userData.role === 'admin') {
+                    const adminUsers = await getAdminUsers();
+                    isMasterAdmin = adminUsers.length === 1 && adminUsers[0].uid === user.uid;
+                }
+                
+                updateUIForAdmin(userData.role === 'admin');
                 
                 // Carregar temas salvos se for admin
                 if (userData.role === 'admin') {
@@ -1176,8 +1187,11 @@ function checkAuthState() {
                 loadUserProgress();
             }
         } else if (!isGuest) {
-                showSection('home-section');
-                updateUIForLoggedOutUser();
+            // Usuário não está logado e não é visitante
+            currentUser = null;
+            
+            // Atualizar interface para usuário não logado
+            updateUIForLoggedOutUser();
         }
     });
 }
@@ -1315,8 +1329,6 @@ async function handleLogin(e) {
         }
         
         // Fazer login com Firebase Auth
-        // Garante que o usuário permaneça logado mesmo fechando o navegador ou dando F5
-        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
