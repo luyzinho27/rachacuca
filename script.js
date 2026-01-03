@@ -3007,7 +3007,7 @@ async function openEditUserModal(userId) {
         document.getElementById('edit-user-password').value = '';
         
         // Se não for master admin, desabilitar alteração de role para admin
-        if (!isMasterAdmin && userData.role === 'admin') {
+        if (!isMasterAdmin) {
             document.getElementById('edit-user-role').disabled = true;
         } else {
             document.getElementById('edit-user-role').disabled = false;
@@ -3336,3 +3336,4 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, errorMessage, 'error');
     }
 }
+
