@@ -3280,10 +3280,7 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, 'Criando conta...', 'info');
         
         // Verificar se o usuário atual é administrador
-
-if (!isMasterAdmin && userData.role !== 'admin') {
-      
-        //if (currentUser.role !== 'admin') {
+        if (currentUser.role !== "admin") {
             showFormMessage(messageElement, 'Apenas administradores podem criar novas contas.', 'error');
             return;
         }
@@ -3339,6 +3336,7 @@ if (!isMasterAdmin && userData.role !== 'admin') {
         showFormMessage(messageElement, errorMessage, 'error');
     }
 }
+
 
 
 
