@@ -2226,7 +2226,7 @@ async function loadAdminThemes() {
                             ${themeData.description ? `<div class="admin-theme-description">${themeData.description}</div>` : ''}
                         </div>
                         <div class="admin-theme-actions">
-                            <button class="btn btn-secondary btn-icon edit-theme-btn" data-theme-id="${themeId}">
+                            <button class="btn btn-danger btn-icon edit-theme-btn" data-theme-id="${themeId}">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button class="btn btn-danger btn-icon delete-theme-btn" data-theme-id="${themeId}">
@@ -2915,7 +2915,7 @@ async function loadAdminUsers() {
                             </div>
                         </div>
                         <div class="user-actions">
-                            <button class="btn btn-secondary btn-icon edit-user-btn" data-user-id="${user.id}">
+                            <button class="btn btn-danger btn-icon edit-user-btn" data-user-id="${user.id}">
                                 <i class="fas fa-edit"></i>
                             </button>
                             ${isMasterAdmin && user.id !== currentUser.uid ? `
@@ -3298,3 +3298,4 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, "Erro: " + error.message, 'error');
     }
 }
+
