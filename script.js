@@ -121,9 +121,6 @@ function initializeFirebase() {
         console.log("Firebase inicializado com sucesso!");
         updateDBStatus("Conectado", "connected");
         
-        // Configurar persistência de autenticação
-        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        
         // Verificar se já existe um administrador no sistema
         checkAdminExists();
     } catch (error) {
@@ -1154,10 +1151,7 @@ async function loadUserData(uid) {
             const userData = userDoc.data();
             
             // Atualizar informações do usuário
-            if (currentUser) {
-                currentUser.role = userData.role;
-                currentUser.status = userData.status;
-            }
+            updateProfileInfo(userData);
             
             return userData;
         } else {
@@ -1191,6 +1185,33 @@ async function createUserDocument(uid) {
         return userData;
     } catch (error) {
         console.error("Erro ao criar documento do usuário:", error);
+    }
+}
+
+// Atualizar informações do perfil
+function updateProfileInfo(userData) {
+    // Atualizar elementos do perfil se estiverem visíveis
+    const profileName = document.getElementById('profile-name');
+    const profileEmail = document.getElementById('profile-email');
+    const profileRole = document.getElementById('profile-role');
+    const profileJoined = document.getElementById('profile-joined');
+    
+    if (profileName && userData.name) {
+        profileName.textContent = userData.name;
+    }
+    
+    if (profileEmail && userData.email) {
+        profileEmail.textContent = userData.email;
+    }
+    
+    if (profileRole) {
+        profileRole.textContent = userData.role === 'admin' ? 'Administrador' : 'Jogador';
+    }
+    
+    if (profileJoined && userData.createdAt) {
+        // Converter timestamp do Firestore para data
+        const date = userData.createdAt.toDate ? userData.createdAt.toDate() : new Date();
+        profileJoined.textContent = `Membro desde: ${date.toLocaleDateString('pt-BR')}`;
     }
 }
 
@@ -3065,8 +3086,9 @@ async function handleAdminRegister(e) {
     try {
         showFormMessage(messageElement, 'Criando conta...', 'info');
         
-        // Verificar se o usuário atual é administrador
-        if (currentUser.role !== 'admin') {
+        // Criar usuário com Firebase Auth (apenas administradores podem fazer isso)
+        const isAdmin = await checkIfUserIsAdmin(currentUser.uid);
+        if (!isAdmin) {
             showFormMessage(messageElement, 'Apenas administradores podem criar novas contas.', 'error');
             return;
         }
@@ -3109,4 +3131,5 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, 'Erro ao criar conta de usuário. Tente novamente.', 'error');
     }
 }
+
 
