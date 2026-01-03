@@ -1051,17 +1051,16 @@ function checkAuthState() {
     if (!auth) return;
     
     auth.onAuthStateChanged(async (user) => {
-        if (user && !isGuest) {
-            // Usuário está logado (não é visitante)
+        if (user) {
+            // Se houver usuário, removemos o estado de visitante e mantemos logado
+            isGuest = false; 
             currentUser = user;
-            isGuest = false;
             
-            console.log("Usuário logado:", user.email);
+            // Força a exibição da tela principal em vez da welcome
+            welcomeScreen.style.display = 'none';
+            mainApp.classList.add('active');
             
-            // Atualizar interface para usuário logado
             updateUIForLoggedInUser(user);
-            
-            // Verificar se o usuário é administrador
             const isAdmin = await checkIfUserIsAdmin(user.uid);
             updateUIForAdmin(isAdmin);
             
@@ -1078,9 +1077,7 @@ function checkAuthState() {
             
         } else if (!isGuest) {
             // Usuário não está logado e não é visitante
-            currentUser = null;
-            
-            // Atualizar interface para usuário não logado
+            showSection('home-section');
             updateUIForLoggedOutUser();
         }
     });
@@ -1239,7 +1236,7 @@ async function handleLogin(e) {
         }
         
         // Fazer login com Firebase Auth
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         
@@ -3132,6 +3129,7 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, 'Erro ao criar conta de usuário. Tente novamente.', 'error');
     }
 }
+
 
 
 
