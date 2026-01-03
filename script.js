@@ -3252,14 +3252,15 @@ async function clearOldScores() {
 // Manipular registro de usuário pelo administrador
 // Localize a função handleAdminRegister no seu script.js e substitua por esta:
 async function handleAdminRegister(e) {
-    e.preventDefault();
-    const password = document.getElementById('admin-reg-password').value;
+const password = document.getElementById('admin-reg-password').value;
 const confirmPassword = document.getElementById('admin-confirm-password').value;
 
 if (password !== confirmPassword) {
     showFormMessage(messageElement, "As senhas não conferem!", 'error');
     return; // Para o código aqui mesmo
 }
+  
+    e.preventDefault();
     // Captura dos elementos usando os IDs novos do HTML
     const name = document.getElementById('admin-reg-name').value;
     const email = document.getElementById('admin-reg-email').value;
@@ -3322,4 +3323,5 @@ if (password !== confirmPassword) {
         showFormMessage(messageElement, "Erro: " + error.message, 'error');
     }
 }
+
 
