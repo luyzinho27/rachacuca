@@ -627,47 +627,17 @@
                         <!-- Aba: Cadastrar Novo Usuário -->
                         <section id="admin-section" class="section">
                         <!-- <div id="register-tab" class="admin-tab-content"> -->
-                            <h3><i class="fas fa-user-plus"></i> Cadastrar Novo Usuário</h3>
-                            <p class="form-info">Como administrador, você pode cadastrar novos usuários (jogadores ou administradores).</p>
-                            
-                            <form id="admin-register-form" class="auth-form">
-                                <div class="form-group">
-                                    <label for="admin-name">Nome Completo *</label>
-                                    <input type="text" id="admin-name" required>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="admin-email">Email *</label>
-                                    <input type="email" id="admin-email" required>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="admin-password">Senha *</label>
-                                    <input type="password" id="admin-password" required minlength="6">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="admin-confirm-password">Confirmar Senha *</label>
-                                    <input type="password" id="admin-confirm-password" required>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="admin-role">Tipo de Usuário *</label>
-                                    <select id="admin-role" required>
-                                        <option value="player">Jogador</option>
-                                        <option value="admin">Administrador</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <button type="submit" class="btn btn-primary btn-block">
-                                        <i class="fas fa-user-plus"></i> Cadastrar Usuário
-                                    </button>
-                                </div>
-                                
-                                <div id="admin-register-message" class="form-message"></div>
-                            </form>
-                        </div>
+                            <h2>Painel Administrativo</h2>
+        <form id="admin-register-form"> <input type="text" id="admin-reg-name" placeholder="Nome Completo" required>
+            <input type="email" id="admin-reg-email" placeholder="E-mail" required>
+            <input type="password" id="admin-reg-password" placeholder="Senha" required>
+            <select id="admin-reg-role">
+                <option value="player">Jogador</option>
+                <option value="admin">Administrador</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Cadastrar Usuário</button>
+            <div id="admin-register-message" class="message"></div> </form>
+    </div>
                         </section>
                         
                         <!-- Aba: Estatísticas Avançadas -->
@@ -1038,6 +1008,7 @@
     <script src="script.js"></script>
 </body>
 </html>
+
 
 
 
