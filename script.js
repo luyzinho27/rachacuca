@@ -1154,14 +1154,15 @@ function checkAuthState() {
     if (!auth) return;
     
     auth.onAuthStateChanged(async (user) => {
-        if (user && !isGuest) {
-            // Usuário está logado (não é visitante)
+        if (user) {
+            // Se houver usuário, removemos o estado de visitante e mantemos logado
+            isGuest = false; 
             currentUser = user;
-            isGuest = false;
             
-            console.log("Usuário logado:", user.email);
+            // Força a exibição da tela principal em vez da welcome
+            welcomeScreen.style.display = 'none';
+            mainApp.classList.add('active');
             
-            // Atualizar interface para usuário logado
             updateUIForLoggedInUser(user);
             
             // Verificar se o usuário é administrador
@@ -1188,9 +1189,7 @@ function checkAuthState() {
             }
         } else if (!isGuest) {
             // Usuário não está logado e não é visitante
-            currentUser = null;
-            
-            // Atualizar interface para usuário não logado
+            showSection('home-section');
             updateUIForLoggedOutUser();
         }
     });
@@ -3286,4 +3285,5 @@ async function handleAdminRegister(e) {
         showFormMessage(messageElement, errorMessage, 'error');
     }
 }
+
 
