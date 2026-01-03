@@ -262,7 +262,7 @@ body {
 
 .btn-secondary {
     background-color: rgba(255, 255, 255, 0.2);
-    color: white;
+    color: black;
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -2164,3 +2164,4 @@ body {
         gap: 5px;
     }
 }
+
