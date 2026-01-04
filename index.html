@@ -916,19 +916,37 @@
                 <span class="close-modal">&times;</span>
             </div>
             <div class="modal-body">
-                <form id="admin-theme-form">
+                <form id="theme-edit-form">
+                    <input type="hidden" id="theme-id">
+                    
                     <div class="form-group">
-                        <label for="admin-theme-name">Nome do Tema *</label>
-                        <input type="text" id="admin-theme-name" required placeholder="Ex: Cidades">
+                        <label for="theme-name">Nome do Tema *</label>
+                        <input type="text" id="theme-name" required>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="admin-theme-url">URL da Imagem *</label>
-                        <input type="url" id="admin-theme-url" required placeholder="https://link-da-imagem.jpg">
+                        <label for="theme-description">Descrição</label>
+                        <textarea id="theme-description" rows="3"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Salvar Tema
-                    </button>
-                    <div id="admin-theme-message" class="form-message"></div>
+                    
+                    <div class="form-group">
+                        <label for="theme-image-file">Imagem *</label>
+                        <input type="file" id="theme-image-file" accept="image/*" required>
+                        <small class="form-hint">A imagem será dividida em 16 peças (15 + espaço vazio)</small>
+                    </div>
+                    
+                    <div id="theme-image-preview" style="margin-top: 15px; display: none;">
+                        <h4>Prévia da Imagem</h4>
+                        <div id="theme-preview-image" style="width: 200px; height: 200px; background-size: cover; background-position: center; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-save"></i> Salvar Tema
+                        </button>
+                    </div>
+                    
+                    <div id="theme-edit-message" class="form-message"></div>
                 </form>
             </div>
         </div>
@@ -1008,15 +1026,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
