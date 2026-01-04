@@ -2047,67 +2047,46 @@ function previewThemeImage() {
 async function handleThemeSave(e) {
     e.preventDefault();
     
-    if (!currentUser || currentUser.role !== 'admin') {
-        alert('Apenas administradores podem salvar temas.');
+    // 1. Captura usando IDs específicos para evitar conflitos
+    const nameEl = document.getElementById('admin-theme-name');
+    const urlEl = document.getElementById('admin-theme-url');
+    const messageElement = document.getElementById('admin-theme-message');
+
+    // Validação de segurança para o script não quebrar
+    if (!nameEl || !urlEl) {
+        console.error("Erro: Elementos do formulário de tema não encontrados.");
         return;
     }
-    
-    const themeId = document.getElementById('theme-id').value;
-    const themeName = document.getElementById('theme-name').value;
-    const themeDescription = document.getElementById('theme-description').value;
-    const themeImageFile = document.getElementById('theme-image-file').files[0];
-    const messageElement = document.getElementById('theme-edit-message');
-    
-    if (!themeName || !themeImageFile) {
-        showFormMessage(messageElement, 'Por favor, preencha todos os campos obrigatórios.', 'error');
+
+    const name = nameEl.value.trim();
+    const imageUrl = urlEl.value.trim();
+
+    if (!name || !imageUrl) {
+        showFormMessage(messageElement, 'Por favor, preencha todos os campos.', 'error');
         return;
     }
-    
+
     try {
-        showFormMessage(messageElement, 'Processando imagem...', 'info');
+        showFormMessage(messageElement, 'Salvando tema...', 'info');
+
+        // 2. Salva no Firestore
+        await db.collection('themes').add({
+            name: name,
+            imageUrl: imageUrl,
+            active: true,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy: currentUser.uid
+        });
+
+        showFormMessage(messageElement, 'Tema salvo com sucesso!', 'success');
+        e.target.reset();
         
-        // Processar a imagem
-        const imagePieces = await processImageForTheme(themeImageFile);
-        
-        // Criar objeto do tema
-        const themeData = {
-            name: themeName,
-            description: themeDescription,
-            pieces: imagePieces.pieces,
-            preview: imagePieces.preview,
-            createdBy: currentUser.uid,
-            createdByName: currentUser.displayName || currentUser.email.split('@')[0],
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            isPublic: true
-        };
-        
-        // Adicionar campo createdBy apenas para novos temas
-        if (!themeId) {
-            themeData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-        }
-        
-        // Salvar no Firestore
-        if (themeId) {
-            await db.collection('savedThemes').doc(themeId).update(themeData);
-            showFormMessage(messageElement, 'Tema atualizado com sucesso!', 'success');
-        } else {
-            await db.collection('savedThemes').add(themeData);
-            showFormMessage(messageElement, 'Tema criado com sucesso!', 'success');
-        }
-        
-        // Fechar modal após 1.5 segundos
-        setTimeout(() => {
-            themeEditModal.style.display = 'none';
-            clearFormMessage(messageElement);
-            
-            // Atualizar lista de temas
-            loadSavedThemes();
-            loadAdminThemes();
-        }, 1500);
-        
+        // Atualiza a lista de temas se a função existir
+        if (typeof loadAdminThemes === 'function') loadAdminThemes();
+
     } catch (error) {
         console.error("Erro ao salvar tema:", error);
-        showFormMessage(messageElement, 'Erro ao salvar tema. Tente novamente.', 'error');
+        showFormMessage(messageElement, 'Erro ao salvar tema: ' + error.message, 'error');
     }
 }
 
@@ -3302,6 +3281,7 @@ async function handleAdminRegister(e) {
         showFormMessage(msgEl, "Erro: " + error.message, 'error');
     }
 }
+
 
 
 
