@@ -944,7 +944,7 @@ function setupEventListeners() {
     });
     if (navThemes) navThemes.addEventListener('click', () => {
         showSection('themes-section');
-        loadSavedThemes();
+        loadSavedThemes(); // CARREGA TEMAS PARA TODOS
     });
     if (navAdmin) navAdmin.addEventListener('click', () => {
         showSection('admin-section');
@@ -1106,6 +1106,11 @@ function showSection(sectionId) {
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
         targetSection.classList.add('active');
+        
+        // Carregar dados específicos da seção
+        if (sectionId === 'themes-section') {
+            loadSavedThemes(); // CARREGA TEMAS PARA TODOS
+        }
     }
     
     // Ativar link de navegação correspondente
@@ -1266,12 +1271,6 @@ function updateUIForLoggedInUser(user) {
         const displayName = user.displayName || user.email.split('@')[0];
         userName.textContent = displayName;
     }
-    
-    // Mostrar seção de temas salvos se for admin
-    const savedThemesSection = document.getElementById('saved-themes-section');
-    if (savedThemesSection && currentUser && currentUser.role === 'admin') {
-        savedThemesSection.style.display = 'block';
-    }
 }
 
 // Atualizar UI para usuário não logado
@@ -1282,12 +1281,6 @@ function updateUIForLoggedOutUser() {
     
     // Esconder link para admin
     if (adminNavItem) adminNavItem.style.display = 'none';
-    
-    // Esconder seção de temas salvos
-    const savedThemesSection = document.getElementById('saved-themes-section');
-    if (savedThemesSection) {
-        savedThemesSection.style.display = 'none';
-    }
 }
 
 // Carregar dados do usuário
@@ -1713,6 +1706,89 @@ async function loadSavedTheme(themeId) {
     }
 }
 
+// Carregar temas salvos - FUNÇÃO CORRIGIDA
+async function loadSavedThemes() {
+    try {
+        const savedThemesGrid = document.getElementById('saved-themes-grid');
+        if (!savedThemesGrid) return;
+        
+        // Limpar grid
+        savedThemesGrid.innerHTML = '<p class="no-themes">Carregando temas...</p>';
+        
+        // Buscar temas salvos - AGORA FUNCIONA SEM AUTENTICAÇÃO
+        const themesSnapshot = await db.collection('savedThemes')
+            .where('isPublic', '==', true) // Só temas públicos
+            .orderBy('createdAt', 'desc')
+            .limit(20)
+            .get();
+        
+        if (themesSnapshot.empty) {
+            savedThemesGrid.innerHTML = '<p class="no-themes">Nenhum tema disponível. Administradores podem criar novos temas.</p>';
+            return;
+        }
+        
+        // Limpar mensagem de carregamento
+        savedThemesGrid.innerHTML = '';
+        
+        themesSnapshot.forEach(doc => {
+            const themeData = doc.data();
+            const themeId = doc.id;
+            
+            const themeCard = document.createElement('div');
+            themeCard.className = 'saved-theme-card theme-card';
+            themeCard.dataset.theme = `saved-${themeId}`;
+            
+            // Criar o card do tema
+            themeCard.innerHTML = `
+                <div class="theme-preview">
+                    <div class="theme-example">
+                        <div class="saved-theme-preview" style="width: 100%; height: 100%; background-image: url(${themeData.preview}); background-size: cover; background-position: center; border-radius: 4px;"></div>
+                    </div>
+                </div>
+                <div class="theme-info">
+                    <h3>${themeData.name}</h3>
+                    <p>${themeData.description || 'Tema personalizado'}</p>
+                </div>
+                ${currentUser && currentUser.role === 'admin' ? `
+                <div class="theme-actions">
+                    <button class="btn btn-icon btn-small delete-theme-btn" data-theme-id="${themeId}" title="Excluir tema">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                ` : ''}
+            `;
+            
+            savedThemesGrid.appendChild(themeCard);
+            
+            // Adicionar evento de clique para selecionar o tema
+            themeCard.addEventListener('click', function(e) {
+                if (!e.target.classList.contains('delete-theme-btn')) {
+                    changeTheme(`saved-${themeId}`);
+                }
+            });
+            
+            // Adicionar evento para botão de exclusão (apenas admin)
+            if (currentUser && currentUser.role === 'admin') {
+                const deleteBtn = themeCard.querySelector('.delete-theme-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const themeId = this.dataset.themeId;
+                        deleteSavedTheme(themeId);
+                    });
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error("Erro ao carregar temas salvos:", error);
+        const savedThemesGrid = document.getElementById('saved-themes-grid');
+        if (savedThemesGrid) {
+            savedThemesGrid.innerHTML = '<p class="no-themes">Erro ao carregar temas. Tente novamente mais tarde.</p>';
+        }
+    }
+}
+
 // Manipular upload de imagem
 function handleImageUpload(e) {
     e.preventDefault();
@@ -1926,81 +2002,7 @@ async function savePuzzleAsTheme() {
     }
 }
 
-// Carregar temas salvos
-async function loadSavedThemes() {
-    try {
-        const savedThemesGrid = document.getElementById('saved-themes-grid');
-        if (!savedThemesGrid) return;
-        
-        // Limpar grid
-        savedThemesGrid.innerHTML = '';
-        
-        // Buscar temas salvos
-        const themesSnapshot = await db.collection('savedThemes')
-            .orderBy('createdAt', 'desc')
-            .limit(20)
-            .get();
-        
-        if (themesSnapshot.empty) {
-            savedThemesGrid.innerHTML = '<p class="no-themes">Nenhum tema salvo encontrado.</p>';
-            return;
-        }
-        
-        themesSnapshot.forEach(doc => {
-            const themeData = doc.data();
-            const themeId = doc.id;
-            
-            const themeCard = document.createElement('div');
-            themeCard.className = 'saved-theme-card theme-card';
-            themeCard.dataset.theme = `saved-${themeId}`;
-            
-            themeCard.innerHTML = `
-                <div class="theme-preview">
-                    <div class="theme-example">
-                        <div class="saved-theme-preview" style="width: 100%; height: 100%; background-image: url(${themeData.preview}); background-size: cover; background-position: center; border-radius: 4px;"></div>
-                    </div>
-                </div>
-                <div class="theme-info">
-                    <h3>${themeData.name}</h3>
-                    <p>Criado por: ${themeData.createdByName}</p>
-                </div>
-                ${currentUser && currentUser.role === 'admin' ? `
-                <div class="theme-actions">
-                    <button class="btn btn-icon btn-small delete-theme-btn" data-theme-id="${themeId}" title="Excluir tema">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                ` : ''}
-            `;
-            
-            savedThemesGrid.appendChild(themeCard);
-            
-            // Adicionar evento de clique para selecionar o tema
-            themeCard.addEventListener('click', function(e) {
-                if (!e.target.classList.contains('delete-theme-btn')) {
-                    changeTheme(`saved-${themeId}`);
-                }
-            });
-            
-            // Adicionar evento para botão de exclusão (apenas admin)
-            if (currentUser && currentUser.role === 'admin') {
-                const deleteBtn = themeCard.querySelector('.delete-theme-btn');
-                if (deleteBtn) {
-                    deleteBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        const themeId = this.dataset.themeId;
-                        deleteSavedTheme(themeId);
-                    });
-                }
-            }
-        });
-        
-    } catch (error) {
-        console.error("Erro ao carregar temas salvos:", error);
-    }
-}
-
-// Excluir tema salvo
+// Excluir tema salvo - ATUALIZADA
 async function deleteSavedTheme(themeId) {
     if (!confirm('Tem certeza que deseja excluir este tema?')) {
         return;
@@ -2012,6 +2014,11 @@ async function deleteSavedTheme(themeId) {
         
         // Recarregar lista de temas
         loadSavedThemes();
+        
+        // Se estiver na seção de administração, recarregar também
+        if (adminSection.classList.contains('active')) {
+            loadAdminThemes();
+        }
         
     } catch (error) {
         console.error("Erro ao excluir tema:", error);
@@ -2043,7 +2050,109 @@ function previewThemeImage() {
     reader.readAsDataURL(file);
 }
 
-// Salvar/editar tema
+// Processar imagem para tema - FUNÇÃO CORRIGIDA
+function processImageForTheme(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = function(event) {
+            const img = new Image();
+            
+            img.onload = function() {
+                try {
+                    // Criar um canvas para dividir a imagem
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Redimensionar imagem se for muito grande (máx 800x800)
+                    let width = img.width;
+                    let height = img.height;
+                    const MAX_SIZE = 800;
+                    
+                    if (width > MAX_SIZE || height > MAX_SIZE) {
+                        if (width > height) {
+                            height = (height * MAX_SIZE) / width;
+                            width = MAX_SIZE;
+                        } else {
+                            width = (width * MAX_SIZE) / height;
+                            height = MAX_SIZE;
+                        }
+                    }
+                    
+                    // Configurar canvas com as dimensões da imagem
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Tamanho de cada peça (dividir em 4x4)
+                    const pieceWidth = width / 4;
+                    const pieceHeight = height / 4;
+                    
+                    // Array para armazenar as partes da imagem
+                    const imagePieces = [];
+                    
+                    // Salvar a imagem completa para preview
+                    const fullImageData = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    // Gerar as 16 peças (15 visíveis + 1 vazia)
+                    for (let row = 0; row < 4; row++) {
+                        for (let col = 0; col < 4; col++) {
+                            // Criar canvas para cada peça
+                            const pieceCanvas = document.createElement('canvas');
+                            pieceCanvas.width = pieceWidth;
+                            pieceCanvas.height = pieceHeight;
+                            const pieceCtx = pieceCanvas.getContext('2d');
+                            
+                            // Desenhar a parte da imagem no canvas da peça
+                            pieceCtx.drawImage(
+                                img,
+                                col * pieceWidth,
+                                row * pieceHeight,
+                                pieceWidth,
+                                pieceHeight,
+                                0, 0,
+                                pieceWidth,
+                                pieceHeight
+                            );
+                            
+                            // Converter para data URL
+                            const dataUrl = pieceCanvas.toDataURL('image/jpeg', 0.7);
+                            
+                            // Adicionar ao array (a última peça será null para o espaço vazio)
+                            if (row === 3 && col === 3) {
+                                imagePieces.push(null);
+                            } else {
+                                imagePieces.push(dataUrl);
+                            }
+                        }
+                    }
+                    
+                    resolve({
+                        pieces: imagePieces,
+                        preview: fullImageData
+                    });
+                    
+                } catch (error) {
+                    reject(new Error('Erro ao processar imagem: ' + error.message));
+                }
+            };
+            
+            img.onerror = function() {
+                reject(new Error('Erro ao carregar imagem'));
+            };
+            
+            img.src = event.target.result;
+        };
+        
+        reader.onerror = function() {
+            reject(new Error('Erro ao ler arquivo'));
+        };
+        
+        reader.readAsDataURL(file);
+    });
+}
+
+// Salvar/editar tema - VERSÃO MELHORADA
 async function handleThemeSave(e) {
     e.preventDefault();
     
@@ -2058,30 +2167,46 @@ async function handleThemeSave(e) {
     const themeImageFile = document.getElementById('theme-image-file').files[0];
     const messageElement = document.getElementById('theme-edit-message');
     
-    if (!themeName || !themeImageFile) {
-        showFormMessage(messageElement, 'Por favor, preencha todos os campos obrigatórios.', 'error');
+    if (!themeName) {
+        showFormMessage(messageElement, 'Por favor, informe um nome para o tema.', 'error');
+        return;
+    }
+    
+    if (!themeImageFile && !themeId) {
+        showFormMessage(messageElement, 'Por favor, selecione uma imagem.', 'error');
         return;
     }
     
     try {
         showFormMessage(messageElement, 'Processando imagem...', 'info');
         
-        // Processar a imagem
-        const imagePieces = await processImageForTheme(themeImageFile);
+        let imagePieces;
+        let preview;
+        
+        // Se há uma nova imagem, processá-la
+        if (themeImageFile) {
+            const processedImage = await processImageForTheme(themeImageFile);
+            imagePieces = processedImage.pieces;
+            preview = processedImage.preview;
+        }
         
         // Criar objeto do tema
         const themeData = {
             name: themeName,
             description: themeDescription,
-            pieces: imagePieces.pieces,
-            preview: imagePieces.preview,
-            createdBy: currentUser.uid,
-            createdByName: currentUser.displayName || currentUser.email.split('@')[0],
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            isPublic: true
+            isPublic: true,
+            createdBy: currentUser.uid,
+            createdByName: currentUser.displayName || currentUser.email.split('@')[0]
         };
         
-        // Adicionar campo createdBy apenas para novos temas
+        // Adicionar dados da imagem se houver uma nova
+        if (imagePieces && preview) {
+            themeData.pieces = imagePieces;
+            themeData.preview = preview;
+        }
+        
+        // Adicionar campo createdAt apenas para novos temas
         if (!themeId) {
             themeData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         }
@@ -2099,90 +2224,23 @@ async function handleThemeSave(e) {
         setTimeout(() => {
             themeEditModal.style.display = 'none';
             clearFormMessage(messageElement);
+            themeEditForm.reset();
+            document.getElementById('theme-image-preview').style.display = 'none';
             
             // Atualizar lista de temas
             loadSavedThemes();
             loadAdminThemes();
+            
+            // Se estiver na seção de temas, forçar atualização visual
+            if (themesSection.classList.contains('active')) {
+                showSection('themes-section'); // Recarrega a seção
+            }
         }, 1500);
         
     } catch (error) {
-        console.error("Erro ao salvar tema:", error);
-        showFormMessage(messageElement, 'Erro ao salvar tema. Tente novamente.', 'error');
+        console.error("Erro detalhado ao salvar tema:", error);
+        showFormMessage(messageElement, 'Erro ao salvar tema: ' + error.message, 'error');
     }
-}
-
-// Processar imagem para tema
-function processImageForTheme(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = function() {
-                // Criar um canvas para dividir a imagem
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                // Tamanho de cada peça (dividir em 4x4)
-                const pieceWidth = img.width / 4;
-                const pieceHeight = img.height / 4;
-                
-                // Array para armazenar as partes da imagem
-                const imagePieces = [];
-                
-                // Salvar a imagem completa para preview
-                const fullImageCanvas = document.createElement('canvas');
-                fullImageCanvas.width = img.width;
-                fullImageCanvas.height = img.height;
-                const fullImageCtx = fullImageCanvas.getContext('2d');
-                fullImageCtx.drawImage(img, 0, 0);
-                const fullImageData = fullImageCanvas.toDataURL('image/jpeg', 0.7);
-                
-                // Gerar as 16 peças (15 visíveis + 1 vazia)
-                for (let row = 0; row < 4; row++) {
-                    for (let col = 0; col < 4; col++) {
-                        // Criar canvas para cada peça
-                        const pieceCanvas = document.createElement('canvas');
-                        pieceCanvas.width = pieceWidth;
-                        pieceCanvas.height = pieceHeight;
-                        const pieceCtx = pieceCanvas.getContext('2d');
-                        
-                        // Desenhar a parte da imagem no canvas da peça
-                        pieceCtx.drawImage(
-                            img,
-                            col * pieceWidth,
-                            row * pieceHeight,
-                            pieceWidth,
-                            pieceHeight,
-                            0, 0,
-                            pieceWidth,
-                            pieceHeight
-                        );
-                        
-                        // Converter para data URL
-                        const dataUrl = pieceCanvas.toDataURL('image/jpeg', 0.7);
-                        
-                        // Adicionar ao array (a última peça será null para o espaço vazio)
-                        if (row === 3 && col === 3) {
-                            imagePieces.push(null);
-                        } else {
-                            imagePieces.push(dataUrl);
-                        }
-                    }
-                }
-                
-                resolve({
-                    pieces: imagePieces,
-                    preview: fullImageData
-                });
-            };
-            
-            img.src = event.target.result;
-        };
-        
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
 }
 
 // Carregar temas para administração
@@ -2226,7 +2284,7 @@ async function loadAdminThemes() {
                             ${themeData.description ? `<div class="admin-theme-description">${themeData.description}</div>` : ''}
                         </div>
                         <div class="admin-theme-actions">
-                            <button class="btn btn-danger btn-icon edit-theme-btn" data-theme-id="${themeId}">
+                            <button class="btn btn-primary btn-icon edit-theme-btn" data-theme-id="${themeId}">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button class="btn btn-danger btn-icon delete-theme-btn" data-theme-id="${themeId}">
@@ -2915,7 +2973,7 @@ async function loadAdminUsers() {
                             </div>
                         </div>
                         <div class="user-actions">
-                            <button class="btn btn-danger btn-icon edit-user-btn" data-user-id="${user.id}">
+                            <button class="btn btn-primary btn-icon edit-user-btn" data-user-id="${user.id}">
                                 <i class="fas fa-edit"></i>
                             </button>
                             ${isMasterAdmin && user.id !== currentUser.uid ? `
@@ -3250,7 +3308,6 @@ async function clearOldScores() {
 }
 
 // Manipular registro de usuário pelo administrador
-// Localize a função handleAdminRegister no seu script.js e substitua por esta:
 async function handleAdminRegister(e) {
     e.preventDefault();
     
