@@ -942,10 +942,21 @@ function setupEventListeners() {
         showSection('progress-section');
         loadUserProgress();
     });
-    if (navThemes) navThemes.addEventListener('click', () => {
-        showSection('themes-section');
-        loadSavedThemes(); // CARREGA TEMAS PARA TODOS
-    });
+    
+    // NAVEGAÇÃO PARA TEMAS - ATUALIZADA
+    if (navThemes) {
+        navThemes.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log("Navegando para seção de Temas...");
+            showSection('themes-section');
+            
+            // Carregar temas com um pequeno delay para garantir que o DOM esteja pronto
+            setTimeout(function() {
+                loadSavedThemes();
+            }, 300);
+        });
+    }
+    
     if (navAdmin) navAdmin.addEventListener('click', () => {
         showSection('admin-section');
         loadAdminUsers();
@@ -1090,6 +1101,8 @@ function quickPlay() {
 
 // Mostrar seção específica
 function showSection(sectionId) {
+    console.log("Mostrando seção:", sectionId);
+    
     // Esconder todas as seções
     const sections = document.querySelectorAll('.page-section');
     sections.forEach(section => {
@@ -1109,7 +1122,11 @@ function showSection(sectionId) {
         
         // Carregar dados específicos da seção
         if (sectionId === 'themes-section') {
-            loadSavedThemes(); // CARREGA TEMAS PARA TODOS
+            console.log("Iniciando carregamento de temas...");
+            // Carregar temas com pequeno delay para garantir DOM pronto
+            setTimeout(() => {
+                loadSavedThemes();
+            }, 200);
         }
     }
     
@@ -1271,6 +1288,12 @@ function updateUIForLoggedInUser(user) {
         const displayName = user.displayName || user.email.split('@')[0];
         userName.textContent = displayName;
     }
+    
+    // Mostrar seção de temas salvos se for admin
+    const savedThemesSection = document.getElementById('saved-themes-section');
+    if (savedThemesSection && currentUser && currentUser.role === 'admin') {
+        savedThemesSection.style.display = 'block';
+    }
 }
 
 // Atualizar UI para usuário não logado
@@ -1281,6 +1304,12 @@ function updateUIForLoggedOutUser() {
     
     // Esconder link para admin
     if (adminNavItem) adminNavItem.style.display = 'none';
+    
+    // Esconder seção de temas salvos
+    const savedThemesSection = document.getElementById('saved-themes-section');
+    if (savedThemesSection) {
+        savedThemesSection.style.display = 'none';
+    }
 }
 
 // Carregar dados do usuário
@@ -1674,10 +1703,13 @@ function changeTheme(theme) {
 // Carregar tema salvo do Firestore
 async function loadSavedTheme(themeId) {
     try {
+        console.log("Carregando tema ID:", themeId);
+        
         const themeDoc = await db.collection('savedThemes').doc(themeId).get();
         
         if (themeDoc.exists) {
             const themeData = themeDoc.data();
+            console.log("Tema encontrado:", themeData.name);
             
             // Processar as peças da imagem
             const imagePieces = themeData.pieces || [];
@@ -1699,6 +1731,9 @@ async function loadSavedTheme(themeId) {
             if (themesSection.classList.contains('active')) {
                 showSection('game-section');
             }
+        } else {
+            console.log("Tema não encontrado no Firestore");
+            alert('Tema não encontrado. Ele pode ter sido excluído.');
         }
     } catch (error) {
         console.error("Erro ao carregar tema salvo:", error);
@@ -1706,48 +1741,82 @@ async function loadSavedTheme(themeId) {
     }
 }
 
-// Carregar temas salvos - FUNÇÃO CORRIGIDA
+// ========== FUNÇÕES PARA TEMAS SALVOS ==========
+
+// Carregar temas salvos - FUNÇÃO ATUALIZADA
 async function loadSavedThemes() {
+    console.log("=== loadSavedThemes() INICIADA ===");
+    
     try {
         const savedThemesGrid = document.getElementById('saved-themes-grid');
-        if (!savedThemesGrid) return;
+        console.log("Elemento saved-themes-grid encontrado?", !!savedThemesGrid);
         
-        // Limpar grid
-        savedThemesGrid.innerHTML = '<p class="no-themes">Carregando temas...</p>';
+        if (!savedThemesGrid) {
+            console.error("Elemento saved-themes-grid não encontrado no DOM");
+            return;
+        }
         
-        // Buscar temas salvos - AGORA FUNCIONA SEM AUTENTICAÇÃO
+        // Mostrar estado de carregamento
+        savedThemesGrid.innerHTML = '<div class="loading-themes"><i class="fas fa-spinner fa-spin"></i> Carregando temas da comunidade...</div>';
+        
+        console.log("Buscando temas do Firestore...");
+        
+        // Buscar temas salvos - AGORA FUNCIONA PARA TODOS OS USUÁRIOS
         const themesSnapshot = await db.collection('savedThemes')
-            .where('isPublic', '==', true) // Só temas públicos
+            .where('isPublic', '==', true)
             .orderBy('createdAt', 'desc')
             .limit(20)
             .get();
         
+        console.log("Total de temas encontrados:", themesSnapshot.size);
+        
         if (themesSnapshot.empty) {
-            savedThemesGrid.innerHTML = '<p class="no-themes">Nenhum tema disponível. Administradores podem criar novos temas.</p>';
+            savedThemesGrid.innerHTML = `
+                <div class="no-themes-message">
+                    <i class="fas fa-image-slash"></i>
+                    <h4>Nenhum tema disponível</h4>
+                    <p>Os administradores ainda não criaram temas personalizados.</p>
+                </div>`;
+            console.log("Nenhum tema encontrado no Firestore");
             return;
         }
         
-        // Limpar mensagem de carregamento
+        // Limpar grid
         savedThemesGrid.innerHTML = '';
         
+        // Contador para temas
+        let themeCount = 0;
+        
         themesSnapshot.forEach(doc => {
+            themeCount++;
             const themeData = doc.data();
             const themeId = doc.id;
             
+            console.log(`Processando tema ${themeCount}: ${themeData.name} (ID: ${themeId})`);
+            
             const themeCard = document.createElement('div');
-            themeCard.className = 'saved-theme-card theme-card';
+            themeCard.className = 'theme-card';
             themeCard.dataset.theme = `saved-${themeId}`;
             
-            // Criar o card do tema
+            // Garantir que temos um preview válido
+            const previewUrl = themeData.preview || (themeData.pieces && themeData.pieces[0]) || '';
+            
             themeCard.innerHTML = `
                 <div class="theme-preview">
                     <div class="theme-example">
-                        <div class="saved-theme-preview" style="width: 100%; height: 100%; background-image: url(${themeData.preview}); background-size: cover; background-position: center; border-radius: 4px;"></div>
+                        <div class="saved-theme-preview-img" 
+                             style="width: 100%; height: 100%; 
+                                    background-image: url(${previewUrl}); 
+                                    background-size: cover; 
+                                    background-position: center; 
+                                    border-radius: 4px;">
+                        </div>
                     </div>
                 </div>
                 <div class="theme-info">
                     <h3>${themeData.name}</h3>
                     <p>${themeData.description || 'Tema personalizado'}</p>
+                    <small>Criado por: ${themeData.createdByName || 'Administrador'}</small>
                 </div>
                 ${currentUser && currentUser.role === 'admin' ? `
                 <div class="theme-actions">
@@ -1762,7 +1831,9 @@ async function loadSavedThemes() {
             
             // Adicionar evento de clique para selecionar o tema
             themeCard.addEventListener('click', function(e) {
-                if (!e.target.classList.contains('delete-theme-btn')) {
+                // Não ativar se clicou no botão de exclusão
+                if (!e.target.closest('.delete-theme-btn')) {
+                    console.log("Tema selecionado:", themeData.name);
                     changeTheme(`saved-${themeId}`);
                 }
             });
@@ -1780,11 +1851,18 @@ async function loadSavedThemes() {
             }
         });
         
+        console.log(`=== TEMAS CARREGADOS COM SUCESSO: ${themeCount} temas ===`);
+        
     } catch (error) {
         console.error("Erro ao carregar temas salvos:", error);
         const savedThemesGrid = document.getElementById('saved-themes-grid');
         if (savedThemesGrid) {
-            savedThemesGrid.innerHTML = '<p class="no-themes">Erro ao carregar temas. Tente novamente mais tarde.</p>';
+            savedThemesGrid.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h4>Erro ao carregar temas</h4>
+                    <p>${error.message}</p>
+                </div>`;
         }
     }
 }
@@ -2002,7 +2080,7 @@ async function savePuzzleAsTheme() {
     }
 }
 
-// Excluir tema salvo - ATUALIZADA
+// Excluir tema salvo
 async function deleteSavedTheme(themeId) {
     if (!confirm('Tem certeza que deseja excluir este tema?')) {
         return;
@@ -2030,9 +2108,9 @@ async function deleteSavedTheme(themeId) {
 function openCreateThemeModal() {
     document.getElementById('theme-modal-title').textContent = 'Criar Novo Tema';
     document.getElementById('theme-id').value = '';
-    document.getElementById('theme-name').value = '';
-    document.getElementById('theme-description').value = '';
-    document.getElementById('theme-image-file').value = '';
+    themeNameInput.value = '';
+    themeDescriptionInput.value = '';
+    themeImageFileInput.value = '';
     document.getElementById('theme-image-preview').style.display = 'none';
     themeEditModal.style.display = 'flex';
 }
@@ -2152,7 +2230,7 @@ function processImageForTheme(file) {
     });
 }
 
-// Salvar/editar tema - VERSÃO MELHORADA
+// Salvar/editar tema - FUNÇÃO ATUALIZADA
 async function handleThemeSave(e) {
     e.preventDefault();
     
@@ -2162,9 +2240,9 @@ async function handleThemeSave(e) {
     }
     
     const themeId = document.getElementById('theme-id').value;
-    const themeName = document.getElementById('theme-name').value;
-    const themeDescription = document.getElementById('theme-description').value;
-    const themeImageFile = document.getElementById('theme-image-file').files[0];
+    const themeName = themeNameInput.value;
+    const themeDescription = themeDescriptionInput.value;
+    const themeImageFile = themeImageFileInput.files[0];
     const messageElement = document.getElementById('theme-edit-message');
     
     if (!themeName) {
@@ -2211,13 +2289,17 @@ async function handleThemeSave(e) {
             themeData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         }
         
+        console.log("Salvando tema no Firestore...", themeData);
+        
         // Salvar no Firestore
         if (themeId) {
             await db.collection('savedThemes').doc(themeId).update(themeData);
             showFormMessage(messageElement, 'Tema atualizado com sucesso!', 'success');
+            console.log("Tema atualizado:", themeId);
         } else {
-            await db.collection('savedThemes').add(themeData);
+            const docRef = await db.collection('savedThemes').add(themeData);
             showFormMessage(messageElement, 'Tema criado com sucesso!', 'success');
+            console.log("Tema criado com ID:", docRef.id);
         }
         
         // Fechar modal após 1.5 segundos
@@ -2227,14 +2309,12 @@ async function handleThemeSave(e) {
             themeEditForm.reset();
             document.getElementById('theme-image-preview').style.display = 'none';
             
-            // Atualizar lista de temas
-            loadSavedThemes();
-            loadAdminThemes();
+            // Atualizar lista de temas em TODAS as seções
+            loadSavedThemes(); // Para a seção de Temas (todos os usuários)
+            loadAdminThemes(); // Para a aba de administração
             
-            // Se estiver na seção de temas, forçar atualização visual
-            if (themesSection.classList.contains('active')) {
-                showSection('themes-section'); // Recarrega a seção
-            }
+            console.log("Lista de temas atualizada após criação/edição");
+            
         }, 1500);
         
     } catch (error) {
@@ -2284,7 +2364,7 @@ async function loadAdminThemes() {
                             ${themeData.description ? `<div class="admin-theme-description">${themeData.description}</div>` : ''}
                         </div>
                         <div class="admin-theme-actions">
-                            <button class="btn btn-primary btn-icon edit-theme-btn" data-theme-id="${themeId}">
+                            <button class="btn btn-danger btn-icon edit-theme-btn" data-theme-id="${themeId}">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button class="btn btn-danger btn-icon delete-theme-btn" data-theme-id="${themeId}">
@@ -2327,8 +2407,8 @@ async function editTheme(themeId, themeData) {
     try {
         document.getElementById('theme-modal-title').textContent = 'Editar Tema';
         document.getElementById('theme-id').value = themeId;
-        document.getElementById('theme-name').value = themeData.name;
-        document.getElementById('theme-description').value = themeData.description || '';
+        themeNameInput.value = themeData.name;
+        themeDescriptionInput.value = themeData.description || '';
         
         // Mostrar preview da imagem existente
         if (themeData.preview) {
@@ -2343,6 +2423,8 @@ async function editTheme(themeId, themeData) {
         alert('Erro ao carregar tema. Tente novamente.');
     }
 }
+
+// ========== FIM DAS FUNÇÕES PARA TEMAS ==========
 
 // Carregar ranking
 async function loadRanking() {
@@ -2973,7 +3055,7 @@ async function loadAdminUsers() {
                             </div>
                         </div>
                         <div class="user-actions">
-                            <button class="btn btn-primary btn-icon edit-user-btn" data-user-id="${user.id}">
+                            <button class="btn btn-danger btn-icon edit-user-btn" data-user-id="${user.id}">
                                 <i class="fas fa-edit"></i>
                             </button>
                             ${isMasterAdmin && user.id !== currentUser.uid ? `
