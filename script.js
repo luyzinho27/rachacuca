@@ -2799,16 +2799,13 @@ async function loadUserProgress() {
     }
     
     try {
-        console.log(`📡 Buscando pontuações para usuário: ${currentUser.uid}`);
+        console.log(`📡 Buscando todas as pontuações...`);
         
-        // Buscar pontuações do usuário
-        const scoresSnapshot = await db.collection('scores')
-            .where('userId', '==', currentUser.uid)
-            .orderBy('date', 'desc')
-            .limit(50)
-            .get();
+        // BUSCA SIMPLIFICADA: Pegue TODAS as pontuações e filtre localmente
+        // Isso é menos eficiente, mas não requer índice
+        const scoresSnapshot = await db.collection('scores').get();
         
-        console.log(`✅ ${scoresSnapshot.size} pontuações encontradas`);
+        console.log(`✅ ${scoresSnapshot.size} pontuações totais encontradas`);
         
         const scores = [];
         let totalMoves = 0;
@@ -2824,9 +2821,16 @@ async function loadUserProgress() {
         
         const timelineData = {};
         
+        // Filtrar localmente as pontuações do usuário atual
         scoresSnapshot.forEach((doc, index) => {
             const data = doc.data();
-            console.log(`📊 Pontuação ${index + 1}:`, {
+            
+            // Pular pontuações de outros usuários
+            if (data.userId !== currentUser.uid) {
+                return;
+            }
+            
+            console.log(`📊 Pontuação ${index + 1} do usuário:`, {
                 id: doc.id,
                 moves: data.moves,
                 time: data.time,
@@ -2881,6 +2885,9 @@ async function loadUserProgress() {
             timelineData[dateStr].count++;
             timelineData[dateStr].moves += data.moves;
         });
+        
+        // Ordenar por data (mais recente primeiro) manualmente
+        scores.sort((a, b) => b.date - a.date);
         
         const totalGames = scores.length;
         
@@ -3720,3 +3727,4 @@ async function handleAdminRegister(e) {
         showFormMessage(msgEl, "Erro: " + error.message, 'error');
     }
 }
+
