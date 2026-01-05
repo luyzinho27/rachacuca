@@ -1737,17 +1737,14 @@ async function loadThemesForPlayers() {
             themeCard.dataset.theme = `saved-${doc.id}`;
             themeCard.title = `Clique para usar: ${theme.name}`;
             
+            // CORREÇÃO AQUI: Usar a estrutura correta para mostrar a miniatura
             themeCard.innerHTML = `
                 <div class="theme-preview">
                     <div class="theme-example">
-                        <div class="theme-image-preview" 
-                             style="background-image: url('${theme.preview || ''}');
-                                    width: 100%; 
-                                    height: 120px;
-                                    background-size: cover;
-                                    background-position: center;
-                                    border-radius: 8px;">
-                        </div>
+                        ${theme.preview ? 
+                            `<div class="theme-image-preview" style="background-image: url('${theme.preview}')"></div>` : 
+                            `<div class="theme-image-preview"><i class="fas fa-image fa-2x" style="color: #ccc;"></i></div>`
+                        }
                     </div>
                 </div>
                 <div class="theme-info">
@@ -1806,6 +1803,7 @@ async function loadAndUseSavedTheme(themeId) {
         }
         
         const themeData = themeDoc.data();
+        console.log("📸 Preview URL:", themeData.preview); // Log para verificar
         
         // Atualizar variáveis globais
         customImageData = themeData.pieces || [];
@@ -2019,7 +2017,7 @@ async function saveCustomImageAsTheme() {
         const themeData = {
             name: themeName,
             pieces: customImageData,
-            preview: customImagePreview,
+            preview: customImagePreview, // Garantir que o preview seja salvo
             createdBy: currentUser.uid,
             createdByName: currentUser.displayName || currentUser.email.split('@')[0],
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2062,7 +2060,7 @@ async function savePuzzleAsTheme() {
         const themeData = {
             name: themeName,
             pieces: customImageData,
-            preview: customImagePreview,
+            preview: customImagePreview, // Garantir que o preview seja salvo
             createdBy: currentUser.uid,
             createdByName: currentUser.displayName || currentUser.email.split('@')[0],
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2113,11 +2111,14 @@ async function loadSavedThemes() {
             themeCard.className = 'saved-theme-card theme-card';
             themeCard.dataset.theme = `saved-${themeId}`;
             
-            // Criar o card do tema
+            // Criar o card do tema com preview correto
             themeCard.innerHTML = `
                 <div class="theme-preview">
                     <div class="theme-example">
-                        <div class="saved-theme-preview" style="width: 100%; height: 100%; background-image: url(${themeData.preview}); background-size: cover; background-position: center; border-radius: 4px;"></div>
+                        ${themeData.preview ? 
+                            `<div class="theme-image-preview" style="background-image: url('${themeData.preview}')"></div>` : 
+                            `<div class="saved-theme-preview"><i class="fas fa-image fa-2x" style="color: #ccc;"></i></div>`
+                        }
                     </div>
                 </div>
                 <div class="theme-info">
@@ -2437,7 +2438,7 @@ async function loadAdminThemes() {
                     
                     themeItem.innerHTML = `
                         <div class="admin-theme-preview">
-                            <div style="width: 60px; height: 60px; background-image: url(${themeData.preview}); background-size: cover; background-position: center; border-radius: 4px;"></div>
+                            <div class="theme-image-preview" style="width: 60px; height: 60px; background-image: url(${themeData.preview});"></div>
                         </div>
                         <div class="admin-theme-info">
                             <div class="admin-theme-name">${themeData.name}</div>
