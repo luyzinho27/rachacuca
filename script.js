@@ -932,10 +932,22 @@ function setupEventListeners() {
         showSection('ranking-section');
         loadRanking();
     });
-    if (navProgress) navProgress.addEventListener('click', () => {
-        showSection('progress-section');
-        if (currentUser) loadUserProgress();
-    });
+    
+    // CORREÇÃO IMPORTANTE: Navegação para Progresso
+    if (navProgress) {
+        navProgress.addEventListener('click', () => {
+            showSection('progress-section');
+            if (currentUser && !isGuest) {
+                loadUserProgress();
+            } else {
+                // Mostrar mensagem para usuários não logados
+                const historyList = document.getElementById('progress-history-list');
+                if (historyList) {
+                    historyList.innerHTML = '<p class="no-history">Faça login para ver seu progresso.</p>';
+                }
+            }
+        });
+    }
     
     // 🔥 NAVEGAÇÃO PARA TEMAS - GARANTIDO
     if (navThemes) {
@@ -2691,7 +2703,7 @@ async function loadGlobalStats() {
     }
 }
 
-// Carregar progresso do usuário
+// Carregar progresso do usuário - CORRIGIDO
 async function loadUserProgress() {
     if (!currentUser || isGuest) return;
     
@@ -2719,10 +2731,29 @@ async function loadUserProgress() {
         
         scoresSnapshot.forEach(doc => {
             const data = doc.data();
+            
+            // TRATAMENTO CORRETO DA DATA
+            let gameDate;
+            try {
+                if (data.date && typeof data.date.toDate === 'function') {
+                    gameDate = data.date.toDate();
+                } else if (data.date && data.date.seconds) {
+                    // Formato alternativo do Firebase
+                    gameDate = new Date(data.date.seconds * 1000);
+                } else if (data.date instanceof Date) {
+                    gameDate = data.date;
+                } else {
+                    gameDate = new Date();
+                }
+            } catch (error) {
+                console.error("Erro ao processar data:", error);
+                gameDate = new Date();
+            }
+            
             scores.push({
                 id: doc.id,
                 ...data,
-                date: data.date && data.date.toDate ? data.date.toDate() : new Date()
+                date: gameDate
             });
             
             // Atualizar estatísticas
@@ -2739,8 +2770,8 @@ async function loadUserProgress() {
                 difficultyStats[data.difficulty].time += data.time;
             }
             
-            // Dados para timeline
-            const dateStr = data.date.toDate().toISOString().split('T')[0];
+            // Timeline com data tratada
+            const dateStr = gameDate.toISOString().split('T')[0];
             if (!timelineData[dateStr]) {
                 timelineData[dateStr] = { count: 0, moves: 0 };
             }
