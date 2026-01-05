@@ -3525,7 +3525,7 @@ async function handleAdminRegister(e) {
     }
 }
 
-// 🔥 Função de teste
+/* 🔥 Função de teste
 async function testThemesLoading() {
     console.log("=== 🧪 TESTE DE CARREGAMENTO DE TEMAS ===");
     
@@ -3559,4 +3559,5 @@ async function testThemesLoading() {
     console.log(`3. Elemento DOM: ${grid ? '✅ Encontrado' : '❌ Não encontrado'}`);
     
     console.log("=== FIM DO TESTE ===");
-}
+} */
+
