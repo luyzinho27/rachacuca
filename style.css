@@ -2237,7 +2237,10 @@ body {
 }
 
 #hero-howto-btn {
-    color: #565c58;
+    background-color: rgba(86, 92, 88, 0.2);
+    color: white;
+    border: 1px solid rgba(42, 43, 42, 0.3);
 }
+
 
 
