@@ -107,6 +107,7 @@ let adminDailyChart = null;
 
 // Inicialização do aplicativo
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("📱 DOM Carregado - Iniciando aplicativo");
     initializeFirebase();
     initializeDOMElements();
     initializeGame();
@@ -126,7 +127,7 @@ function initializeFirebase() {
         auth = firebase.auth();
         db = firebase.firestore();
         
-        console.log("Firebase inicializado com sucesso!");
+        console.log("✅ Firebase inicializado com sucesso!");
         updateDBStatus("Conectado", "connected");
         
         // Configurar persistência de autenticação
@@ -135,7 +136,7 @@ function initializeFirebase() {
         // Verificar se já existe um administrador no sistema
         checkAdminExists();
     } catch (error) {
-        console.error("Erro ao inicializar Firebase:", error);
+        console.error("❌ Erro ao inicializar Firebase:", error);
         updateDBStatus("Erro de conexão", "error");
     }
 }
@@ -156,7 +157,7 @@ async function checkAdminExists() {
         const snapshot = await usersRef.where('role', '==', 'admin').limit(1).get();
         
         adminUserExists = !snapshot.empty;
-        console.log("Admin existe:", adminUserExists);
+        console.log("👑 Admin existe:", adminUserExists);
         
         // Se não existir admin, mostrar opção de cadastro como admin
         if (!adminUserExists) {
@@ -169,7 +170,7 @@ async function checkAdminExists() {
             }
         }
     } catch (error) {
-        console.error("Erro ao verificar administrador:", error);
+        console.error("❌ Erro ao verificar administrador:", error);
     }
 }
 
@@ -186,7 +187,7 @@ function checkRememberedUser() {
                 document.getElementById('remember-me').checked = true;
             }
         } catch (e) {
-            console.log("Erro ao carregar usuário lembrado:", e);
+            console.log("⚠️ Erro ao carregar usuário lembrado:", e);
         }
     }
 }
@@ -204,6 +205,8 @@ function saveUserCredentials(email, password) {
 
 // Inicializar elementos do DOM
 function initializeDOMElements() {
+    console.log("🔧 Inicializando elementos DOM...");
+    
     // Elementos da tela de boas-vindas
     welcomeScreen = document.getElementById('welcome-screen');
     mainApp = document.getElementById('main-app');
@@ -236,6 +239,14 @@ function initializeDOMElements() {
     progressSection = document.getElementById('progress-section');
     themesSection = document.getElementById('themes-section');
     adminSection = document.getElementById('admin-section');
+    
+    console.log("📋 Seções encontradas:");
+    console.log("- home-section:", !!homeSection);
+    console.log("- game-section:", !!gameSection);
+    console.log("- ranking-section:", !!rankingSection);
+    console.log("- progress-section:", !!progressSection);
+    console.log("- themes-section:", !!themesSection);
+    console.log("- admin-section:", !!adminSection);
     
     // Navegação
     adminNavItem = document.getElementById('admin-nav-item');
@@ -292,6 +303,8 @@ function initializeDOMElements() {
     themeNameInput = document.getElementById('theme-name');
     themeDescriptionInput = document.getElementById('theme-description');
     themeImageFileInput = document.getElementById('theme-image-file');
+    
+    console.log("✅ Elementos DOM inicializados!");
 }
 
 // Inicializar o jogo
@@ -730,13 +743,13 @@ async function saveScoreAutomatically() {
         // Salvar no Firestore
         await db.collection('scores').add(scoreData);
         
-        console.log("Pontuação salva automaticamente");
+        console.log("✅ Pontuação salva automaticamente");
         
         // Atualizar estatísticas globais
         loadGlobalStats();
         
     } catch (error) {
-        console.error("Erro ao salvar pontuação automaticamente:", error);
+        console.error("❌ Erro ao salvar pontuação automaticamente:", error);
     }
 }
 
@@ -855,6 +868,8 @@ function initializePreviewBoard() {
 
 // Configurar event listeners
 function setupEventListeners() {
+    console.log("🔗 Configurando event listeners...");
+    
     // Event listeners da tela de boas-vindas
     if (playGuestBtn) playGuestBtn.addEventListener('click', playAsGuest);
     if (welcomeLoginBtn) welcomeLoginBtn.addEventListener('click', showLoginModal);
@@ -933,20 +948,43 @@ function setupEventListeners() {
         loadRanking();
     });
     
-    // CORREÇÃO IMPORTANTE: Navegação para Progresso
+    // CORREÇÃO CRÍTICA: Navegação para Progresso - DEBUG INTENSIVO
     if (navProgress) {
-        navProgress.addEventListener('click', () => {
+        console.log("🎯 Configurando listener para nav-progress");
+        navProgress.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log("🖱️ Clicou em Progresso!");
+            console.log("👤 Estado do usuário:", {
+                currentUser: currentUser ? "Logado" : "Não logado",
+                isGuest: isGuest,
+                uid: currentUser ? currentUser.uid : "N/A"
+            });
+            
             showSection('progress-section');
+            
             if (currentUser && !isGuest) {
+                console.log("📊 Carregando progresso para usuário:", currentUser.uid);
                 loadUserProgress();
             } else {
+                console.log("🚫 Usuário não logado ou é visitante");
                 // Mostrar mensagem para usuários não logados
                 const historyList = document.getElementById('progress-history-list');
                 if (historyList) {
+                    console.log("📝 Exibindo mensagem para usuário não logado");
                     historyList.innerHTML = '<p class="no-history">Faça login para ver seu progresso.</p>';
+                } else {
+                    console.error("❌ Elemento progress-history-list não encontrado!");
                 }
+                
+                // Também limpar estatísticas
+                document.getElementById('user-total-games').textContent = '0';
+                document.getElementById('user-best-moves').textContent = '0';
+                document.getElementById('user-best-time').textContent = '00:00';
+                document.getElementById('user-avg-moves').textContent = '0';
             }
         });
+    } else {
+        console.error("❌ Elemento nav-progress não encontrado!");
     }
     
     // 🔥 NAVEGAÇÃO PARA TEMAS - GARANTIDO
@@ -1087,6 +1125,8 @@ function setupEventListeners() {
     
     // Embaralhar o tabuleiro inicialmente
     shuffleBoard();
+    
+    console.log("✅ Event listeners configurados!");
 }
 
 // Jogar como visitante
@@ -1114,6 +1154,8 @@ function quickPlay() {
 
 // Mostrar seção específica
 function showSection(sectionId) {
+    console.log(`🔄 Mostrando seção: ${sectionId}`);
+    
     // Esconder todas as seções
     const sections = document.querySelectorAll('.page-section');
     sections.forEach(section => {
@@ -1130,6 +1172,9 @@ function showSection(sectionId) {
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
         targetSection.classList.add('active');
+        console.log(`✅ Seção ${sectionId} ativada`);
+    } else {
+        console.error(`❌ Seção ${sectionId} não encontrada!`);
     }
     
     // Ativar link de navegação correspondente
@@ -1211,43 +1256,62 @@ function showInstructionsModal() {
 
 // Verificar estado de autenticação
 function checkAuthState() {
-    if (!auth) return;
+    console.log("🔐 Verificando estado de autenticação...");
+    
+    if (!auth) {
+        console.error("❌ Firebase Auth não inicializado!");
+        return;
+    }
     
     auth.onAuthStateChanged(async (user) => {
         if (user) {
+            console.log("✅ Usuário autenticado:", user.email);
+            
             // Se houver usuário, removemos o estado de visitante e mantemos logado
             isGuest = false; 
             currentUser = user;
             
             // Força a exibição da tela principal em vez da welcome
-            welcomeScreen.style.display = 'none';
-            mainApp.classList.add('active');
+            if (welcomeScreen) {
+                welcomeScreen.style.display = 'none';
+            }
+            if (mainApp) {
+                mainApp.classList.add('active');
+            }
             
             updateUIForLoggedInUser(user);
             
             // Verificar se o usuário é administrador
-            const userData = await loadUserData(user.uid);
-            if (userData) {
-                currentUser.role = userData.role;
-                currentUser.status = userData.status;
-                
-                // Verificar se é o primeiro admin (master)
-                if (userData.role === 'admin') {
-                    const adminUsers = await getAdminUsers();
-                    isMasterAdmin = adminUsers.length === 1 && adminUsers[0].uid === user.uid;
+            try {
+                const userData = await loadUserData(user.uid);
+                if (userData) {
+                    console.log("📋 Dados do usuário carregados:", userData);
+                    currentUser.role = userData.role;
+                    currentUser.status = userData.status;
+                    
+                    // Verificar se é o primeiro admin (master)
+                    if (userData.role === 'admin') {
+                        const adminUsers = await getAdminUsers();
+                        isMasterAdmin = adminUsers.length === 1 && adminUsers[0].uid === user.uid;
+                        console.log("👑 É admin master?", isMasterAdmin);
+                    }
+                    
+                    updateUIForAdmin(userData.role === 'admin');
+                    
+                    // Carregar temas salvos se for admin
+                    if (userData.role === 'admin') {
+                        loadSavedThemes();
+                    }
+                    
+                    // Carregar progresso do usuário
+                    console.log("📊 Carregando progresso inicial...");
+                    loadUserProgress();
                 }
-                
-                updateUIForAdmin(userData.role === 'admin');
-                
-                // Carregar temas salvos se for admin
-                if (userData.role === 'admin') {
-                    loadSavedThemes();
-                }
-                
-                // Carregar progresso do usuário
-                loadUserProgress();
+            } catch (error) {
+                console.error("❌ Erro ao carregar dados do usuário:", error);
             }
         } else if (!isGuest) {
+            console.log("🚫 Usuário não autenticado e não é visitante");
             // Usuário não está logado e não é visitante
             currentUser = null;
             
@@ -1274,13 +1338,15 @@ async function getAdminUsers() {
         
         return adminUsers;
     } catch (error) {
-        console.error("Erro ao buscar administradores:", error);
+        console.error("❌ Erro ao buscar administradores:", error);
         return [];
     }
 }
 
 // Atualizar UI para usuário logado
 function updateUIForLoggedInUser(user) {
+    console.log("👤 Atualizando UI para usuário logado:", user.email);
+    
     // Mostrar informações do usuário
     if (userInfoContainer) userInfoContainer.style.display = 'flex';
     if (authButtons) authButtons.style.display = 'none';
@@ -1300,6 +1366,8 @@ function updateUIForLoggedInUser(user) {
 
 // Atualizar UI para usuário não logado
 function updateUIForLoggedOutUser() {
+    console.log("🚫 Atualizando UI para usuário não logado");
+    
     // Mostrar botões de autenticação
     if (userInfoContainer) userInfoContainer.style.display = 'none';
     if (authButtons) authButtons.style.display = 'flex';
@@ -1317,17 +1385,21 @@ function updateUIForLoggedOutUser() {
 // Carregar dados do usuário
 async function loadUserData(uid) {
     try {
+        console.log(`📥 Carregando dados do usuário ${uid}...`);
         const userDoc = await db.collection('users').doc(uid).get();
+        
         if (userDoc.exists) {
             const userData = userDoc.data();
+            console.log("✅ Dados do usuário encontrados:", userData);
             return userData;
         } else {
+            console.log("📝 Criando documento do usuário...");
             // Criar documento do usuário se não existir
             await createUserDocument(uid);
             return await loadUserData(uid); // Recursivamente buscar os dados após criar
         }
     } catch (error) {
-        console.error("Erro ao carregar dados do usuário:", error);
+        console.error("❌ Erro ao carregar dados do usuário:", error);
         return null;
     }
 }
@@ -1353,7 +1425,7 @@ async function createUserDocument(uid) {
         };
         
         await db.collection('users').doc(uid).set(userData);
-        console.log("Documento do usuário criado com sucesso");
+        console.log("✅ Documento do usuário criado com sucesso");
         
         // Se for o primeiro usuário, atualizar variável global
         if (isFirstUser) {
@@ -1363,7 +1435,7 @@ async function createUserDocument(uid) {
         
         return userData;
     } catch (error) {
-        console.error("Erro ao criar documento do usuário:", error);
+        console.error("❌ Erro ao criar documento do usuário:", error);
     }
 }
 
@@ -1424,7 +1496,7 @@ async function handleLogin(e) {
         }, 1500);
         
     } catch (error) {
-        console.error("Erro ao fazer login:", error);
+        console.error("❌ Erro ao fazer login:", error);
         
         let errorMessage = 'Erro ao fazer login. ';
         switch (error.code) {
@@ -1548,7 +1620,7 @@ async function handleRegister(e) {
         }, 1500);
         
     } catch (error) {
-        console.error("Erro ao criar conta:", error);
+        console.error("❌ Erro ao criar conta:", error);
         
         let errorMessage = 'Erro ao criar conta. ';
         switch (error.code) {
@@ -1598,7 +1670,7 @@ async function handlePasswordReset(e) {
         }, 3000);
         
     } catch (error) {
-        console.error("Erro ao enviar email de recuperação:", error);
+        console.error("❌ Erro ao enviar email de recuperação:", error);
         
         let errorMessage = 'Erro ao enviar email de recuperação. ';
         switch (error.code) {
@@ -1620,7 +1692,7 @@ async function handlePasswordReset(e) {
 async function handleLogout() {
     try {
         await auth.signOut();
-        console.log("Usuário deslogado com sucesso");
+        console.log("✅ Usuário deslogado com sucesso");
         
         // Limpar credenciais salvas
         localStorage.removeItem('rememberedUser');
@@ -1631,7 +1703,7 @@ async function handleLogout() {
         currentUser = null;
         
     } catch (error) {
-        console.error("Erro ao fazer logout:", error);
+        console.error("❌ Erro ao fazer logout:", error);
         alert('Erro ao fazer logout. Tente novamente.');
     }
 }
@@ -1839,7 +1911,7 @@ async function loadAndUseSavedTheme(themeId) {
         }
         
     } catch (error) {
-        console.error("Erro ao carregar tema salvo:", error);
+        console.error("❌ Erro ao carregar tema salvo:", error);
         alert('Erro ao carregar tema. Tente novamente.');
     }
 }
@@ -1874,7 +1946,7 @@ async function loadSavedTheme(themeId) {
             }
         }
     } catch (error) {
-        console.error("Erro ao carregar tema salvo:", error);
+        console.error("❌ Erro ao carregar tema salvo:", error);
         alert('Erro ao carregar tema. Tente novamente.');
     }
 }
@@ -2047,7 +2119,7 @@ async function saveCustomImageAsTheme() {
         loadThemesForPlayers();
         
     } catch (error) {
-        console.error("Erro ao salvar tema:", error);
+        console.error("❌ Erro ao salvar tema:", error);
         alert('Erro ao salvar tema. Tente novamente.');
     }
 }
@@ -2087,7 +2159,7 @@ async function savePuzzleAsTheme() {
         loadThemesForPlayers();
         
     } catch (error) {
-        console.error("Erro ao salvar tema:", error);
+        console.error("❌ Erro ao salvar tema:", error);
         alert('Erro ao salvar tema. Tente novamente.');
     }
 }
@@ -2169,7 +2241,7 @@ async function loadSavedThemes() {
         });
         
     } catch (error) {
-        console.error("Erro ao carregar temas salvos:", error);
+        console.error("❌ Erro ao carregar temas salvos:", error);
         const savedThemesGrid = document.getElementById('saved-themes-grid');
         if (savedThemesGrid) {
             savedThemesGrid.innerHTML = '<p class="no-themes">Erro ao carregar temas. Tente novamente mais tarde.</p>';
@@ -2196,7 +2268,7 @@ async function deleteSavedTheme(themeId) {
         }
         
     } catch (error) {
-        console.error("Erro ao excluir tema:", error);
+        console.error("❌ Erro ao excluir tema:", error);
         alert('Erro ao excluir tema. Tente novamente.');
     }
 }
@@ -2415,7 +2487,7 @@ async function handleThemeSave(e) {
         }, 1500);
         
     } catch (error) {
-        console.error("Erro detalhado ao salvar tema:", error);
+        console.error("❌ Erro detalhado ao salvar tema:", error);
         showFormMessage(messageElement, 'Erro ao salvar tema: ' + error.message, 'error');
     }
 }
@@ -2492,7 +2564,7 @@ async function loadAdminThemes() {
         }
         
     } catch (error) {
-        console.error("Erro ao carregar temas para admin:", error);
+        console.error("❌ Erro ao carregar temas para admin:", error);
     } finally {
         const loadingElement = document.getElementById('admin-themes-loading');
         if (loadingElement) loadingElement.style.display = 'none';
@@ -2516,7 +2588,7 @@ async function editTheme(themeId, themeData) {
         themeEditModal.style.display = 'flex';
         
     } catch (error) {
-        console.error("Erro ao carregar tema para edição:", error);
+        console.error("❌ Erro ao carregar tema para edição:", error);
         alert('Erro ao carregar tema. Tente novamente.');
     }
 }
@@ -2641,7 +2713,7 @@ async function loadRanking() {
         }
         
     } catch (error) {
-        console.error("Erro ao carregar ranking:", error);
+        console.error("❌ Erro ao carregar ranking:", error);
         rankingListElement.innerHTML = '<p class="error-message">Erro ao carregar ranking. Tente novamente.</p>';
     } finally {
         // Esconder spinner de carregamento
@@ -2672,6 +2744,8 @@ function getDifficultyText(difficulty) {
 // Carregar estatísticas globais
 async function loadGlobalStats() {
     try {
+        console.log("📈 Carregando estatísticas globais...");
+        
         // Carregar total de jogos
         const scoresSnapshot = await db.collection('scores').get();
         const totalGames = scoresSnapshot.size;
@@ -2698,22 +2772,43 @@ async function loadGlobalStats() {
         const totalPlayers = usersSnapshot.size;
         document.getElementById('total-players').textContent = totalPlayers;
         
+        console.log("✅ Estatísticas globais carregadas:", {
+            totalGames,
+            avgMoves,
+            avgTime,
+            totalPlayers
+        });
+        
     } catch (error) {
-        console.error("Erro ao carregar estatísticas globais:", error);
+        console.error("❌ Erro ao carregar estatísticas globais:", error);
     }
 }
 
-// Carregar progresso do usuário - CORRIGIDO
+// Carregar progresso do usuário - CORRIGIDO E COM DEBUG
 async function loadUserProgress() {
-    if (!currentUser || isGuest) return;
+    console.log("🚀 loadUserProgress() INICIADA");
+    console.log("👤 Estado do usuário:", {
+        currentUser: currentUser ? `Logado (${currentUser.email})` : "Não logado",
+        isGuest: isGuest,
+        uid: currentUser ? currentUser.uid : "N/A"
+    });
+    
+    if (!currentUser || isGuest) {
+        console.log("🚫 Não carregando progresso: usuário não logado ou é visitante");
+        return;
+    }
     
     try {
+        console.log(`📡 Buscando pontuações para usuário: ${currentUser.uid}`);
+        
         // Buscar pontuações do usuário
         const scoresSnapshot = await db.collection('scores')
             .where('userId', '==', currentUser.uid)
             .orderBy('date', 'desc')
             .limit(50)
             .get();
+        
+        console.log(`✅ ${scoresSnapshot.size} pontuações encontradas`);
         
         const scores = [];
         let totalMoves = 0;
@@ -2729,8 +2824,16 @@ async function loadUserProgress() {
         
         const timelineData = {};
         
-        scoresSnapshot.forEach(doc => {
+        scoresSnapshot.forEach((doc, index) => {
             const data = doc.data();
+            console.log(`📊 Pontuação ${index + 1}:`, {
+                id: doc.id,
+                moves: data.moves,
+                time: data.time,
+                difficulty: data.difficulty,
+                theme: data.theme,
+                date: data.date
+            });
             
             // TRATAMENTO CORRETO DA DATA
             let gameDate;
@@ -2746,7 +2849,7 @@ async function loadUserProgress() {
                     gameDate = new Date();
                 }
             } catch (error) {
-                console.error("Erro ao processar data:", error);
+                console.error("❌ Erro ao processar data:", error);
                 gameDate = new Date();
             }
             
@@ -2781,11 +2884,28 @@ async function loadUserProgress() {
         
         const totalGames = scores.length;
         
+        console.log("📈 Estatísticas calculadas:", {
+            totalGames,
+            totalMoves,
+            totalTime,
+            bestMoves,
+            bestTime,
+            difficultyStats,
+            timelineDataKeys: Object.keys(timelineData).length
+        });
+        
         // Atualizar estatísticas na interface
-        document.getElementById('user-total-games').textContent = totalGames;
-        document.getElementById('user-best-moves').textContent = bestMoves === Infinity ? 0 : bestMoves;
-        document.getElementById('user-best-time').textContent = bestTime === Infinity ? '00:00' : formatTime(bestTime);
-        document.getElementById('user-avg-moves').textContent = totalGames > 0 ? Math.round(totalMoves / totalGames) : 0;
+        const totalGamesEl = document.getElementById('user-total-games');
+        const bestMovesEl = document.getElementById('user-best-moves');
+        const bestTimeEl = document.getElementById('user-best-time');
+        const avgMovesEl = document.getElementById('user-avg-moves');
+        
+        if (totalGamesEl) totalGamesEl.textContent = totalGames;
+        if (bestMovesEl) bestMovesEl.textContent = bestMoves === Infinity ? 0 : bestMoves;
+        if (bestTimeEl) bestTimeEl.textContent = bestTime === Infinity ? '00:00' : formatTime(bestTime);
+        if (avgMovesEl) avgMovesEl.textContent = totalGames > 0 ? Math.round(totalMoves / totalGames) : 0;
+        
+        console.log("✅ Estatísticas atualizadas na interface");
         
         // Atualizar histórico recente
         updateProgressHistory(scores.slice(0, 10));
@@ -2793,24 +2913,39 @@ async function loadUserProgress() {
         // Criar gráficos
         createUserCharts(difficultyStats, timelineData);
         
+        console.log("🎉 loadUserProgress() CONCLUÍDA COM SUCESSO");
+        
     } catch (error) {
-        console.error("Erro ao carregar progresso do usuário:", error);
+        console.error("❌ Erro ao carregar progresso do usuário:", error);
+        console.error("Detalhes do erro:", error.message, error.stack);
+        
+        // Mostrar mensagem de erro na interface
+        const historyList = document.getElementById('progress-history-list');
+        if (historyList) {
+            historyList.innerHTML = `<p class="no-history">Erro ao carregar progresso: ${error.message}</p>`;
+        }
     }
 }
 
 // Atualizar histórico de progresso
 function updateProgressHistory(scores) {
+    console.log("📝 Atualizando histórico de progresso com", scores.length, "itens");
+    
     const historyList = document.getElementById('progress-history-list');
-    if (!historyList) return;
+    if (!historyList) {
+        console.error("❌ Elemento progress-history-list não encontrado!");
+        return;
+    }
     
     if (scores.length === 0) {
+        console.log("📭 Nenhum jogo para exibir no histórico");
         historyList.innerHTML = '<p class="no-history">Nenhum jogo registrado ainda.</p>';
         return;
     }
     
     historyList.innerHTML = '';
     
-    scores.forEach(score => {
+    scores.forEach((score, index) => {
         const historyItem = document.createElement('div');
         historyItem.className = 'history-item';
         
@@ -2831,13 +2966,19 @@ function updateProgressHistory(scores) {
         
         historyList.appendChild(historyItem);
     });
+    
+    console.log("✅ Histórico atualizado com sucesso");
 }
 
 // Criar gráficos do usuário
 function createUserCharts(difficultyStats, timelineData) {
+    console.log("📊 Criando gráficos...");
+    
     // Gráfico de desempenho por dificuldade
     const difficultyCtx = document.getElementById('difficulty-chart');
     if (difficultyCtx) {
+        console.log("📈 Criando gráfico de dificuldade");
+        
         // Destruir gráfico anterior se existir
         if (userDifficultyChart) {
             userDifficultyChart.destroy();
@@ -2849,6 +2990,11 @@ function createUserCharts(difficultyStats, timelineData) {
             difficultyStats.normal.count,
             difficultyStats.hard.count
         ];
+        
+        console.log("📊 Dados do gráfico de dificuldade:", {
+            labels: difficultyLabels,
+            data: difficultyCounts
+        });
         
         userDifficultyChart = new Chart(difficultyCtx, {
             type: 'bar',
@@ -2887,58 +3033,77 @@ function createUserCharts(difficultyStats, timelineData) {
                 }
             }
         });
+        
+        console.log("✅ Gráfico de dificuldade criado");
+    } else {
+        console.error("❌ Canvas difficulty-chart não encontrado!");
     }
     
     // Gráfico de timeline
     const timelineCtx = document.getElementById('timeline-chart');
-    if (timelineCtx && Object.keys(timelineData).length > 0) {
+    if (timelineCtx) {
+        console.log("📅 Criando gráfico de timeline");
+        
         // Destruir gráfico anterior se existir
         if (userTimelineChart) {
             userTimelineChart.destroy();
         }
         
-        // Ordenar datas
-        const sortedDates = Object.keys(timelineData).sort();
-        const last7Dates = sortedDates.slice(-7); // Últimos 7 dias
-        
-        const timelineLabels = last7Dates.map(date => {
-            const d = new Date(date);
-            return `${d.getDate()}/${d.getMonth() + 1}`;
-        });
-        
-        const timelineCounts = last7Dates.map(date => timelineData[date].count);
-        
-        userTimelineChart = new Chart(timelineCtx, {
-            type: 'line',
-            data: {
+        if (Object.keys(timelineData).length > 0) {
+            // Ordenar datas
+            const sortedDates = Object.keys(timelineData).sort();
+            const last7Dates = sortedDates.slice(-7); // Últimos 7 dias
+            
+            const timelineLabels = last7Dates.map(date => {
+                const d = new Date(date);
+                return `${d.getDate()}/${d.getMonth() + 1}`;
+            });
+            
+            const timelineCounts = last7Dates.map(date => timelineData[date].count);
+            
+            console.log("📊 Dados do gráfico de timeline:", {
                 labels: timelineLabels,
-                datasets: [{
-                    label: 'Jogos por Dia',
-                    data: timelineCounts,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgb(54, 162, 235)',
-                    borderWidth: 2,
-                    tension: 0.1,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
+                data: timelineCounts
+            });
+            
+            userTimelineChart = new Chart(timelineCtx, {
+                type: 'line',
+                data: {
+                    labels: timelineLabels,
+                    datasets: [{
+                        label: 'Jogos por Dia',
+                        data: timelineCounts,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgb(54, 162, 235)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+            
+            console.log("✅ Gráfico de timeline criado");
+        } else {
+            console.log("📭 Nenhum dado para gráfico de timeline");
+        }
+    } else {
+        console.error("❌ Canvas timeline-chart não encontrado!");
     }
 }
 
@@ -2980,7 +3145,7 @@ async function loadAdminStats() {
         createAdminCharts(scoresSnapshot);
         
     } catch (error) {
-        console.error("Erro ao carregar estatísticas de admin:", error);
+        console.error("❌ Erro ao carregar estatísticas de admin:", error);
     }
 }
 
@@ -3204,7 +3369,7 @@ async function loadAdminUsers() {
         }
         
     } catch (error) {
-        console.error("Erro ao carregar usuários:", error);
+        console.error("❌ Erro ao carregar usuários:", error);
         if (usersListElement) {
             usersListElement.innerHTML = '<p class="error-message">Erro ao carregar usuários.</p>';
         }
@@ -3235,7 +3400,7 @@ async function deleteUser(userId) {
         loadAdminUsers();
         
     } catch (error) {
-        console.error("Erro ao excluir usuário:", error);
+        console.error("❌ Erro ao excluir usuário:", error);
         alert('Erro ao excluir usuário. Tente novamente.');
     }
 }
@@ -3284,7 +3449,7 @@ async function openEditUserModal(userId) {
         }
         
     } catch (error) {
-        console.error("Erro ao abrir modal de edição de usuário:", error);
+        console.error("❌ Erro ao abrir modal de edição de usuário:", error);
         alert('Erro ao carregar dados do usuário.');
     }
 }
@@ -3327,7 +3492,7 @@ async function handleEditUser(userId) {
         }, 1500);
         
     } catch (error) {
-        console.error("Erro ao atualizar usuário:", error);
+        console.error("❌ Erro ao atualizar usuário:", error);
         showFormMessage(messageElement, 'Erro ao atualizar usuário. Tente novamente.', 'error');
     }
 }
@@ -3428,7 +3593,7 @@ async function loadAdminScores() {
         }
         
     } catch (error) {
-        console.error("Erro ao carregar pontuações:", error);
+        console.error("❌ Erro ao carregar pontuações:", error);
         if (scoresListElement) {
             scoresListElement.innerHTML = '<p class="error-message">Erro ao carregar pontuações. Tente novamente.</p>';
         }
@@ -3457,7 +3622,7 @@ async function deleteScore(scoreId) {
         alert('Pontuação excluída com sucesso!');
         
     } catch (error) {
-        console.error("Erro ao excluir pontuação:", error);
+        console.error("❌ Erro ao excluir pontuação:", error);
         alert('Erro ao excluir pontuação. Tente novamente.');
     }
 }
@@ -3498,7 +3663,7 @@ async function clearOldScores() {
         loadAdminScores();
         
     } catch (error) {
-        console.error("Erro ao limpar pontuações antigas:", error);
+        console.error("❌ Erro ao limpar pontuações antigas:", error);
         alert('Erro ao limpar pontuações antigas. Tente novamente.');
     }
 }
@@ -3517,7 +3682,7 @@ async function handleAdminRegister(e) {
 
     // VALIDAÇÃO DE SEGURANÇA: Se o campo não existir, avisa no console em vez de travar o site
     if (!confEl) {
-        console.error("Erro Crítico: O campo 'admin-reg-confirm-password' não foi encontrado no HTML.");
+        console.error("❌ Erro Crítico: O campo 'admin-reg-confirm-password' não foi encontrado no HTML.");
         return;
     }
 
