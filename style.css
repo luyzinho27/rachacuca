@@ -1220,7 +1220,7 @@ body {
 }
 
 .theme-example .theme-image-preview:empty::after {
-    /* content: "Sem pré-visualização"; */
+    content: "";
     color: #888;
     font-size: 0.9rem;
 }
@@ -2235,4 +2235,5 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
 
