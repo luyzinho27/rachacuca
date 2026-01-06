@@ -3557,6 +3557,9 @@ async function loadAdminScores() {
                     scoreDate = new Date(data.date.seconds * 1000);
                 } else if (data.date instanceof Date) {
                     scoreDate = data.date;
+                } else if (data.date) {
+                    // Tentar converter string para Date
+                    scoreDate = new Date(data.date);
                 } else {
                     console.warn("⚠️ Data não reconhecida:", data.date);
                     scoreDate = new Date();
@@ -3579,22 +3582,28 @@ async function loadAdminScores() {
                 passesFilters = false;
             }
             
-            // Filtro de data (CORRIGIDO)
+            // Filtro de data (CORRIGIDO - mais tolerante)
             if (dateFilter) {
-                try {                
+                try {
                     const filterDate = new Date(dateFilter);
-                    filterDate.setHours(0, 0, 0, 0); // Início do dia
+                    filterDate.setHours(0, 0, 0, 0);
                     
-                    // Criar data de comparação para o score (início do dia)
+                    // Garantir que scoreDate é um objeto Date válido
+                    if (!scoreDate || !(scoreDate instanceof Date) || isNaN(scoreDate.getTime())) {
+                        console.warn("⚠️ Data do score inválida:", scoreDate);
+                        scoreDate = new Date();
+                    }
+                    
                     const scoreDateStart = new Date(scoreDate);
                     scoreDateStart.setHours(0, 0, 0, 0);
                     
-                    // Comparar apenas ano, mês e dia
-                    if (scoreDateStart.getTime() !== filterDate.getTime()) {
+                    // Usar toDateString para comparação simples (apenas data, sem hora)
+                    if (scoreDateStart.toDateString() !== filterDate.toDateString()) {
                         passesFilters = false;
                     }
                 } catch (e) {
                     console.error("❌ Erro ao filtrar por data:", e);
+                    // Se houver erro no filtro de data, mostrar todos os dados
                 }
             }
             
@@ -3620,6 +3629,9 @@ async function loadAdminScores() {
                             'Nenhum resultado para os filtros atuais. Tente ajustar os filtros.' : 
                             'Nenhum jogo foi registrado ainda.'}</p>
                         ${dateFilter ? `<small>Filtro de data: ${new Date(dateFilter).toLocaleDateString('pt-BR')}</small>` : ''}
+                        <button onclick="resetAdminScoreFilters()" class="btn btn-small" style="margin-top: 10px;">
+                            <i class="fas fa-times"></i> Limpar filtros
+                        </button>
                     </div>
                 `;
             } else {
@@ -3864,4 +3876,5 @@ async function handleAdminRegister(e) {
         showFormMessage(msgEl, "Erro: " + error.message, 'error');
     }
 }
+
 
