@@ -1009,6 +1009,8 @@ function setupEventListeners() {
             loadAdminUsers();
             loadAdminThemes();
             loadAdminStats();
+            // Carregar pontuações para admin
+            loadAdminScores();
         } else {
             alert('Apenas administradores podem acessar esta área.');
             showSection('home-section');
@@ -1100,6 +1102,12 @@ function setupEventListeners() {
     if (userSearch) userSearch.addEventListener('input', loadAdminUsers);
     if (clearScoresBtn) clearScoresBtn.addEventListener('click', clearOldScores);
     if (createThemeBtn) createThemeBtn.addEventListener('click', openCreateThemeModal);
+    
+    // Adicionar botão de reset de filtros para pontuações admin
+    const resetFiltersBtn = document.getElementById('reset-filters-btn');
+    if (resetFiltersBtn) {
+        resetFiltersBtn.addEventListener('click', resetAdminScoreFilters);
+    }
     
     // Upload de imagem
     if (imageUploadForm) {
@@ -3504,45 +3512,36 @@ async function handleEditUser(userId) {
     }
 }
 
-// Carregar pontuações para administração
+// CORRIGIDA: Carregar pontuações para administração
 async function loadAdminScores() {
     const loadingElement = document.getElementById('admin-scores-loading');
     const scoresListElement = document.getElementById('admin-scores-list');
     
-    if (!currentUser || currentUser.role !== 'admin') return;
+    if (!currentUser || currentUser.role !== 'admin') {
+        if (scoresListElement) {
+            scoresListElement.innerHTML = '<p class="error-message">Acesso negado. Apenas administradores podem acessar esta área.</p>';
+        }
+        return;
+    }
     
     if (loadingElement) loadingElement.style.display = 'flex';
     if (scoresListElement) scoresListElement.innerHTML = '';
     
     try {
-        // Obter filtros
-        const difficulty = document.getElementById('admin-score-difficulty').value;
-        const theme = document.getElementById('admin-score-theme').value;
-        const dateFilter = document.getElementById('admin-score-date').value;
+        console.log("📊 Carregando pontuações para admin...");
         
-        // Construir query
+        // Obter filtros
+        const difficulty = document.getElementById('admin-score-difficulty')?.value || 'all';
+        const theme = document.getElementById('admin-score-theme')?.value || 'all';
+        const dateFilter = document.getElementById('admin-score-date')?.value;
+        
+        // Construir query - SIMPLIFICADA para evitar problemas de índice
         let query = db.collection('scores').orderBy('date', 'desc').limit(100);
         
-        // Aplicar filtro de dificuldade
-        if (difficulty !== 'all') {
-            query = query.where('difficulty', '==', difficulty);
-        }
+        console.log("🔍 Filtros aplicados:", { difficulty, theme, dateFilter });
         
-        // Aplicar filtro de tema
-        if (theme !== 'all') {
-            query = query.where('theme', '==', theme);
-        }
-        
-        // Aplicar filtro de data
-        if (dateFilter) {
-            const startDate = new Date(dateFilter);
-            startDate.setHours(0, 0, 0, 0);
-            
-            const endDate = new Date(dateFilter);
-            endDate.setHours(23, 59, 59, 999);
-            
-            query = query.where('date', '>=', startDate).where('date', '<=', endDate);
-        }
+        // NOTA: Não aplicamos filtros where() múltiplos para evitar necessidade de índices compostos
+        // Em vez disso, vamos filtrar localmente
         
         // Executar query
         const snapshot = await query.get();
@@ -3550,17 +3549,57 @@ async function loadAdminScores() {
         const scores = [];
         snapshot.forEach(doc => {
             const data = doc.data();
+            
+            // Aplicar filtros localmente
+            if (difficulty !== 'all' && data.difficulty !== difficulty) return;
+            if (theme !== 'all' && data.theme !== theme) return;
+            
+            // Filtrar por data se especificado
+            if (dateFilter) {
+                try {
+                    const scoreDate = data.date?.toDate ? data.date.toDate() : new Date();
+                    const filterDate = new Date(dateFilter);
+                    
+                    // Verificar se é o mesmo dia
+                    if (scoreDate.toDateString() !== filterDate.toDateString()) return;
+                } catch (e) {
+                    console.error("Erro ao filtrar por data:", e);
+                }
+            }
+            
+            let scoreDate;
+            try {
+                if (data.date && typeof data.date.toDate === 'function') {
+                    scoreDate = data.date.toDate();
+                } else if (data.date && data.date.seconds) {
+                    scoreDate = new Date(data.date.seconds * 1000);
+                } else {
+                    scoreDate = new Date();
+                }
+            } catch (error) {
+                console.error("Erro ao converter data:", error);
+                scoreDate = new Date();
+            }
+            
             scores.push({
                 id: doc.id,
                 ...data,
-                date: data.date && data.date.toDate ? data.date.toDate() : new Date()
+                date: scoreDate
             });
         });
+        
+        console.log(`✅ ${scores.length} pontuações carregadas após filtros`);
         
         // Atualizar lista de pontuações
         if (scoresListElement) {
             if (scores.length === 0) {
-                scoresListElement.innerHTML = '<p class="no-scores">Nenhuma pontuação encontrada.</p>';
+                scoresListElement.innerHTML = `
+                    <div class="no-scores">
+                        <i class="fas fa-chart-line fa-2x"></i>
+                        <h4>Nenhuma pontuação encontrada</h4>
+                        <p>${difficulty !== 'all' || theme !== 'all' || dateFilter ? 'Tente ajustar os filtros.' : 'Nenhum jogo foi registrado ainda.'}</p>
+                    </div>
+                `;
             } else {
                 scores.forEach(score => {
                     const scoreItem = document.createElement('div');
@@ -3573,13 +3612,13 @@ async function loadAdminScores() {
                     scoreItem.innerHTML = `
                         <div class="score-date">${formattedDate} ${formattedTime}</div>
                         <div class="score-info">
-                            <span class="score-user">${score.userName}</span>
+                            <span class="score-user">${score.userName || 'Jogador'}</span>
                             <span class="score-difficulty">${getDifficultyText(score.difficulty)} • ${getThemeName(score.theme)}</span>
                         </div>
                         <div class="score-details">
-                            <span>${score.moves} movimentos</span>
-                            <span>${formatTime(score.time)}</span>
-                            <button class="btn btn-danger btn-icon delete-score-btn" data-score-id="${score.id}">
+                            <span class="score-moves">${score.moves} movimentos</span>
+                            <span class="score-time">${formatTime(score.time)}</span>
+                            <button class="btn btn-danger btn-icon delete-score-btn" data-score-id="${score.id}" title="Excluir pontuação">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -3589,49 +3628,102 @@ async function loadAdminScores() {
                 });
                 
                 // Adicionar event listeners aos botões de exclusão
-                const deleteButtons = document.querySelectorAll('.delete-score-btn');
+                const deleteButtons = scoresListElement.querySelectorAll('.delete-score-btn');
                 deleteButtons.forEach(button => {
-                    button.addEventListener('click', function() {
+                    button.addEventListener('click', function(e) {
+                        e.stopPropagation();
                         const scoreId = this.dataset.scoreId;
-                        deleteScore(scoreId);
+                        if (scoreId) {
+                            deleteScore(scoreId);
+                        }
                     });
                 });
+                
+                // Adicionar contador
+                const counter = document.createElement('div');
+                counter.className = 'score-counter';
+                counter.innerHTML = `<small>Mostrando ${scores.length} pontuações</small>`;
+                scoresListElement.appendChild(counter);
             }
         }
         
     } catch (error) {
-        console.error("❌ Erro ao carregar pontuações:", error);
+        console.error("❌ Erro detalhado ao carregar pontuações:", error);
+        
         if (scoresListElement) {
-            scoresListElement.innerHTML = '<p class="error-message">Erro ao carregar pontuações. Tente novamente.</p>';
+            scoresListElement.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    <h4>Erro ao carregar pontuações</h4>
+                    <p>${error.message || 'Verifique sua conexão com o banco de dados.'}</p>
+                    <button onclick="loadAdminScores()" class="btn btn-small">
+                        <i class="fas fa-redo"></i> Tentar novamente
+                    </button>
+                </div>
+            `;
         }
     } finally {
         if (loadingElement) loadingElement.style.display = 'none';
     }
 }
 
-// Excluir pontuação
+// CORRIGIDA: Excluir pontuação
 async function deleteScore(scoreId) {
-    if (!confirm('Tem certeza que deseja excluir esta pontuação?')) {
+    if (!scoreId) {
+        console.error("ID da pontuação não fornecido");
+        return;
+    }
+    
+    if (!confirm('Tem certeza que deseja excluir esta pontuação permanentemente?')) {
         return;
     }
     
     try {
+        console.log(`🗑️ Excluindo pontuação: ${scoreId}`);
+        
         await db.collection('scores').doc(scoreId).delete();
         
-        // Recarregar lista de pontuações
+        console.log("✅ Pontuação excluída com sucesso");
+        
+        // Recarregar a lista de pontuações
         loadAdminScores();
         
         // Se estiver na seção de ranking, recarregar também
-        if (rankingSection.classList.contains('active')) {
+        if (rankingSection && rankingSection.classList.contains('active')) {
             loadRanking();
         }
         
-        alert('Pontuação excluída com sucesso!');
+        // Mostrar mensagem de sucesso
+        const message = document.createElement('div');
+        message.className = 'success-message';
+        message.innerHTML = `
+            <i class="fas fa-check-circle"></i>
+            <span>Pontuação excluída com sucesso!</span>
+        `;
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            message.remove();
+        }, 3000);
         
     } catch (error) {
         console.error("❌ Erro ao excluir pontuação:", error);
-        alert('Erro ao excluir pontuação. Tente novamente.');
+        alert('Erro ao excluir pontuação: ' + error.message);
     }
+}
+
+// Função para resetar filtros de pontuações
+function resetAdminScoreFilters() {
+    if (document.getElementById('admin-score-difficulty')) {
+        document.getElementById('admin-score-difficulty').value = 'all';
+    }
+    if (document.getElementById('admin-score-theme')) {
+        document.getElementById('admin-score-theme').value = 'all';
+    }
+    if (document.getElementById('admin-score-date')) {
+        document.getElementById('admin-score-date').value = '';
+    }
+    loadAdminScores();
 }
 
 // Limpar pontuações antigas
@@ -3727,4 +3819,3 @@ async function handleAdminRegister(e) {
         showFormMessage(msgEl, "Erro: " + error.message, 'error');
     }
 }
-
