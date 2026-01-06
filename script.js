@@ -3582,11 +3582,18 @@ async function loadAdminScores() {
                 passesFilters = false;
             }
             
-            // Filtro de data (CORRIGIDO - mais tolerante)
+            // Filtro de data (CORRIGIDO - considera fuso horário)
             if (dateFilter) {
                 try {
-                    const filterDate = new Date(dateFilter);
-                    filterDate.setHours(0, 0, 0, 0);
+                    // Criar data do filtro considerando fuso horário local
+                    // Dividir a data no formato YYYY-MM-DD
+                    const [year, month, day] = dateFilter.split('-').map(Number);
+                    
+                    // Criar data no fuso horário local (início do dia)
+                    const filterDateStart = new Date(year, month - 1, day, 0, 0, 0, 0);
+                    
+                    // Criar data no fuso horário local (fim do dia)
+                    const filterDateEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
                     
                     // Garantir que scoreDate é um objeto Date válido
                     if (!scoreDate || !(scoreDate instanceof Date) || isNaN(scoreDate.getTime())) {
@@ -3594,13 +3601,11 @@ async function loadAdminScores() {
                         scoreDate = new Date();
                     }
                     
-                    const scoreDateStart = new Date(scoreDate);
-                    scoreDateStart.setHours(0, 0, 0, 0);
-                    
-                    // Usar toDateString para comparação simples (apenas data, sem hora)
-                    if (scoreDateStart.toDateString() !== filterDate.toDateString()) {
+                    // Verificar se a data do score está dentro do intervalo do dia selecionado
+                    if (scoreDate < filterDateStart || scoreDate > filterDateEnd) {
                         passesFilters = false;
                     }
+                    
                 } catch (e) {
                     console.error("❌ Erro ao filtrar por data:", e);
                     // Se houver erro no filtro de data, mostrar todos os dados
@@ -3618,6 +3623,13 @@ async function loadAdminScores() {
         
         console.log(`✅ ${scores.length} pontuações carregadas após filtros`);
         
+        // Função para formatar data do filtro (corrigida para fuso horário)
+        function formatFilterDate(dateStr) {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
+            return date.toLocaleDateString('pt-BR');
+        }
+        
         // Atualizar lista de pontuações
         if (scoresListElement) {
             if (scores.length === 0) {
@@ -3628,7 +3640,7 @@ async function loadAdminScores() {
                         <p>${difficulty !== 'all' || theme !== 'all' || dateFilter ? 
                             'Nenhum resultado para os filtros atuais. Tente ajustar os filtros.' : 
                             'Nenhum jogo foi registrado ainda.'}</p>
-                        ${dateFilter ? `<small>Filtro de data: ${new Date(dateFilter).toLocaleDateString('pt-BR')}</small>` : ''}
+                        ${dateFilter ? `<small>Filtro de data: ${formatFilterDate(dateFilter)}</small>` : ''}
                         <button onclick="resetAdminScoreFilters()" class="btn btn-small" style="margin-top: 10px;">
                             <i class="fas fa-times"></i> Limpar filtros
                         </button>
@@ -3692,7 +3704,7 @@ async function loadAdminScores() {
                     <div class="counter-info">
                         <i class="fas fa-chart-bar"></i>
                         <span>Mostrando ${scores.length} pontuações</span>
-                        ${dateFilter ? `<span class="filter-info">Filtrado por: ${new Date(dateFilter).toLocaleDateString('pt-BR')}</span>` : ''}
+                        ${dateFilter ? `<span class="filter-info">Filtrado por: ${formatFilterDate(dateFilter)}</span>` : ''}
                     </div>
                     <button class="btn btn-small btn-clear-filters" onclick="resetAdminScoreFilters()">
                         <i class="fas fa-times"></i> Limpar filtros
@@ -3876,5 +3888,6 @@ async function handleAdminRegister(e) {
         showFormMessage(msgEl, "Erro: " + error.message, 'error');
     }
 }
+
 
 
