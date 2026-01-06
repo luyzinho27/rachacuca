@@ -3513,6 +3513,7 @@ async function handleEditUser(userId) {
 }
 
 // CORRIGIDA: Carregar pontuações para administração
+// CORRIGIDA: Carregar pontuações para administração
 async function loadAdminScores() {
     const loadingElement = document.getElementById('admin-scores-loading');
     const scoresListElement = document.getElementById('admin-scores-list');
@@ -3535,13 +3536,10 @@ async function loadAdminScores() {
         const theme = document.getElementById('admin-score-theme')?.value || 'all';
         const dateFilter = document.getElementById('admin-score-date')?.value;
         
-        // Construir query - SIMPLIFICADA para evitar problemas de índice
-        let query = db.collection('scores').orderBy('date', 'desc').limit(100);
-        
         console.log("🔍 Filtros aplicados:", { difficulty, theme, dateFilter });
         
-        // NOTA: Não aplicamos filtros where() múltiplos para evitar necessidade de índices compostos
-        // Em vez disso, vamos filtrar localmente
+        // Buscar TODAS as pontuações (sem filtros iniciais para evitar problemas de índice)
+        let query = db.collection('scores').orderBy('date', 'desc').limit(200);
         
         // Executar query
         const snapshot = await query.get();
@@ -3550,42 +3548,64 @@ async function loadAdminScores() {
         snapshot.forEach(doc => {
             const data = doc.data();
             
-            // Aplicar filtros localmente
-            if (difficulty !== 'all' && data.difficulty !== difficulty) return;
-            if (theme !== 'all' && data.theme !== theme) return;
-            
-            // Filtrar por data se especificado
-            if (dateFilter) {
-                try {
-                    const scoreDate = data.date?.toDate ? data.date.toDate() : new Date();
-                    const filterDate = new Date(dateFilter);
-                    
-                    // Verificar se é o mesmo dia
-                    if (scoreDate.toDateString() !== filterDate.toDateString()) return;
-                } catch (e) {
-                    console.error("Erro ao filtrar por data:", e);
-                }
-            }
-            
+            // TRATAMENTO CORRETO DA DATA
             let scoreDate;
             try {
                 if (data.date && typeof data.date.toDate === 'function') {
                     scoreDate = data.date.toDate();
                 } else if (data.date && data.date.seconds) {
+                    // Formato do Firebase Timestamp
                     scoreDate = new Date(data.date.seconds * 1000);
+                } else if (data.date instanceof Date) {
+                    scoreDate = data.date;
                 } else {
+                    console.warn("⚠️ Data não reconhecida:", data.date);
                     scoreDate = new Date();
                 }
             } catch (error) {
-                console.error("Erro ao converter data:", error);
+                console.error("❌ Erro ao converter data:", error, data.date);
                 scoreDate = new Date();
             }
             
-            scores.push({
-                id: doc.id,
-                ...data,
-                date: scoreDate
-            });
+            // Aplicar filtros localmente
+            let passesFilters = true;
+            
+            // Filtro de dificuldade
+            if (difficulty !== 'all' && data.difficulty !== difficulty) {
+                passesFilters = false;
+            }
+            
+            // Filtro de tema
+            if (theme !== 'all' && data.theme !== theme) {
+                passesFilters = false;
+            }
+            
+            // Filtro de data (CORRIGIDO)
+            if (dateFilter) {
+                try {
+                    const filterDate = new Date(dateFilter);
+                    filterDate.setHours(0, 0, 0, 0); // Início do dia
+                    
+                    // Criar data de comparação para o score (início do dia)
+                    const scoreDateStart = new Date(scoreDate);
+                    scoreDateStart.setHours(0, 0, 0, 0);
+                    
+                    // Comparar apenas ano, mês e dia
+                    if (scoreDateStart.getTime() !== filterDate.getTime()) {
+                        passesFilters = false;
+                    }
+                } catch (e) {
+                    console.error("❌ Erro ao filtrar por data:", e);
+                }
+            }
+            
+            if (passesFilters) {
+                scores.push({
+                    id: doc.id,
+                    ...data,
+                    date: scoreDate
+                });
+            }
         });
         
         console.log(`✅ ${scores.length} pontuações carregadas após filtros`);
@@ -3597,10 +3617,16 @@ async function loadAdminScores() {
                     <div class="no-scores">
                         <i class="fas fa-chart-line fa-2x"></i>
                         <h4>Nenhuma pontuação encontrada</h4>
-                        <p>${difficulty !== 'all' || theme !== 'all' || dateFilter ? 'Tente ajustar os filtros.' : 'Nenhum jogo foi registrado ainda.'}</p>
+                        <p>${difficulty !== 'all' || theme !== 'all' || dateFilter ? 
+                            'Nenhum resultado para os filtros atuais. Tente ajustar os filtros.' : 
+                            'Nenhum jogo foi registrado ainda.'}</p>
+                        ${dateFilter ? `<small>Filtro de data: ${new Date(dateFilter).toLocaleDateString('pt-BR')}</small>` : ''}
                     </div>
                 `;
             } else {
+                // Ordenar por data (mais recente primeiro)
+                scores.sort((a, b) => b.date - a.date);
+                
                 scores.forEach(score => {
                     const scoreItem = document.createElement('div');
                     scoreItem.className = 'score-item';
@@ -3610,14 +3636,23 @@ async function loadAdminScores() {
                     const formattedTime = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                     
                     scoreItem.innerHTML = `
-                        <div class="score-date">${formattedDate} ${formattedTime}</div>
+                        <div class="score-date">
+                            <div class="score-date-day">${formattedDate}</div>
+                            <div class="score-date-time">${formattedTime}</div>
+                        </div>
                         <div class="score-info">
                             <span class="score-user">${score.userName || 'Jogador'}</span>
                             <span class="score-difficulty">${getDifficultyText(score.difficulty)} • ${getThemeName(score.theme)}</span>
                         </div>
                         <div class="score-details">
-                            <span class="score-moves">${score.moves} movimentos</span>
-                            <span class="score-time">${formatTime(score.time)}</span>
+                            <div class="score-moves">
+                                <span class="score-label">Movimentos:</span>
+                                <span class="score-value">${score.moves}</span>
+                            </div>
+                            <div class="score-time">
+                                <span class="score-label">Tempo:</span>
+                                <span class="score-value">${formatTime(score.time)}</span>
+                            </div>
                             <button class="btn btn-danger btn-icon delete-score-btn" data-score-id="${score.id}" title="Excluir pontuação">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -3642,7 +3677,16 @@ async function loadAdminScores() {
                 // Adicionar contador
                 const counter = document.createElement('div');
                 counter.className = 'score-counter';
-                counter.innerHTML = `<small>Mostrando ${scores.length} pontuações</small>`;
+                counter.innerHTML = `
+                    <div class="counter-info">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Mostrando ${scores.length} pontuações</span>
+                        ${dateFilter ? `<span class="filter-info">Filtrado por: ${new Date(dateFilter).toLocaleDateString('pt-BR')}</span>` : ''}
+                    </div>
+                    <button class="btn btn-small btn-clear-filters" onclick="resetAdminScoreFilters()">
+                        <i class="fas fa-times"></i> Limpar filtros
+                    </button>
+                `;
                 scoresListElement.appendChild(counter);
             }
         }
@@ -3656,9 +3700,14 @@ async function loadAdminScores() {
                     <i class="fas fa-exclamation-triangle fa-2x"></i>
                     <h4>Erro ao carregar pontuações</h4>
                     <p>${error.message || 'Verifique sua conexão com o banco de dados.'}</p>
-                    <button onclick="loadAdminScores()" class="btn btn-small">
-                        <i class="fas fa-redo"></i> Tentar novamente
-                    </button>
+                    <div class="error-actions">
+                        <button onclick="loadAdminScores()" class="btn btn-small">
+                            <i class="fas fa-redo"></i> Tentar novamente
+                        </button>
+                        <button onclick="resetAdminScoreFilters()" class="btn btn-small btn-outline">
+                            <i class="fas fa-broom"></i> Limpar filtros
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -3667,53 +3716,11 @@ async function loadAdminScores() {
     }
 }
 
-// CORRIGIDA: Excluir pontuação
-async function deleteScore(scoreId) {
-    if (!scoreId) {
-        console.error("ID da pontuação não fornecido");
-        return;
-    }
-    
-    if (!confirm('Tem certeza que deseja excluir esta pontuação permanentemente?')) {
-        return;
-    }
-    
-    try {
-        console.log(`🗑️ Excluindo pontuação: ${scoreId}`);
-        
-        await db.collection('scores').doc(scoreId).delete();
-        
-        console.log("✅ Pontuação excluída com sucesso");
-        
-        // Recarregar a lista de pontuações
-        loadAdminScores();
-        
-        // Se estiver na seção de ranking, recarregar também
-        if (rankingSection && rankingSection.classList.contains('active')) {
-            loadRanking();
-        }
-        
-        // Mostrar mensagem de sucesso
-        const message = document.createElement('div');
-        message.className = 'success-message';
-        message.innerHTML = `
-            <i class="fas fa-check-circle"></i>
-            <span>Pontuação excluída com sucesso!</span>
-        `;
-        document.body.appendChild(message);
-        
-        setTimeout(() => {
-            message.remove();
-        }, 3000);
-        
-    } catch (error) {
-        console.error("❌ Erro ao excluir pontuação:", error);
-        alert('Erro ao excluir pontuação: ' + error.message);
-    }
-}
-
-// Função para resetar filtros de pontuações
+// Função para resetar filtros de pontuações (com feedback visual)
 function resetAdminScoreFilters() {
+    console.log("🧹 Resetando filtros...");
+    
+    // Resetar valores dos filtros
     if (document.getElementById('admin-score-difficulty')) {
         document.getElementById('admin-score-difficulty').value = 'all';
     }
@@ -3723,7 +3730,46 @@ function resetAdminScoreFilters() {
     if (document.getElementById('admin-score-date')) {
         document.getElementById('admin-score-date').value = '';
     }
+    
+    // Mostrar mensagem de feedback
+    const feedback = document.createElement('div');
+    feedback.className = 'filter-feedback success';
+    feedback.innerHTML = `
+        <i class="fas fa-check-circle"></i>
+        <span>Filtros resetados com sucesso!</span>
+    `;
+    
+    const scoresListElement = document.getElementById('admin-scores-list');
+    if (scoresListElement) {
+        scoresListElement.parentNode.insertBefore(feedback, scoresListElement);
+        
+        // Remover feedback após 3 segundos
+        setTimeout(() => {
+            feedback.remove();
+        }, 3000);
+    }
+    
+    // Recarregar dados
     loadAdminScores();
+}
+
+// Adicionar também uma função para debug das datas
+function debugDateFilter(dateFilter, scoreDate) {
+    console.log("🔍 Debug de filtro de data:");
+    console.log("Data do filtro:", dateFilter);
+    console.log("Data do score:", scoreDate);
+    
+    const filterDate = new Date(dateFilter);
+    filterDate.setHours(0, 0, 0, 0);
+    
+    const scoreDateStart = new Date(scoreDate);
+    scoreDateStart.setHours(0, 0, 0, 0);
+    
+    console.log("Filtro (início do dia):", filterDate);
+    console.log("Score (início do dia):", scoreDateStart);
+    console.log("São iguais?", filterDate.getTime() === scoreDateStart.getTime());
+    
+    return filterDate.getTime() === scoreDateStart.getTime();
 }
 
 // Limpar pontuações antigas
@@ -3819,3 +3865,4 @@ async function handleAdminRegister(e) {
         showFormMessage(msgEl, "Erro: " + error.message, 'error');
     }
 }
+
