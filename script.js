@@ -3581,16 +3581,7 @@ async function loadAdminScores() {
             
             // Filtro de data (CORRIGIDO)
             if (dateFilter) {
-                try {
-
-                    console.log("Comparando datas:", {
-                        dateFilter,
-                        scoreDate: scoreDate.toISOString(),
-                        filterDate: filterDate.toISOString(),
-                        scoreDateStart: scoreDateStart.toISOString(),
-                        areEqual: scoreDateStart.getTime() === filterDate.getTime()
-                    });
-                  
+                try {                
                     const filterDate = new Date(dateFilter);
                     filterDate.setHours(0, 0, 0, 0); // Início do dia
                     
@@ -3873,3 +3864,4 @@ async function handleAdminRegister(e) {
         showFormMessage(msgEl, "Erro: " + error.message, 'error');
     }
 }
+
