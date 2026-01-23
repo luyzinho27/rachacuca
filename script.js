@@ -47,6 +47,9 @@ let currentTheme = 'numbers';
 let customImageData = null;
 let customImagePreview = null;
 
+// VARIÁVEL NOVA: Estado de habilitação do tabuleiro
+let boardEnabled = false;
+
 // Variáveis para drag and drop
 let draggedTile = null;
 let isDragging = false;
@@ -314,6 +317,9 @@ function initializeGame() {
     createSolutionBoard();
     updateMoveCounter();
     resetTimer();
+    
+    // Estado inicial: tabuleiro desabilitado
+    disableBoard();
 }
 
 // Criar o tabuleiro
@@ -323,6 +329,29 @@ function createBoard() {
     } else {
         board = [...themes[currentTheme].items];
     }
+}
+
+// FUNÇÃO NOVA: Habilitar tabuleiro
+function enableBoard() {
+    boardEnabled = true;
+    if (puzzleBoard) {
+        puzzleBoard.classList.remove('disabled');
+    }
+    console.log("✅ Tabuleiro habilitado");
+}
+
+// FUNÇÃO NOVA: Desabilitar tabuleiro
+function disableBoard() {
+    boardEnabled = false;
+    if (puzzleBoard) {
+        puzzleBoard.classList.add('disabled');
+    }
+    console.log("⛔ Tabuleiro desabilitado");
+}
+
+// FUNÇÃO NOVA: Verificar se o tabuleiro está habilitado
+function isBoardEnabled() {
+    return boardEnabled && !gameCompleted;
 }
 
 // Renderizar o tabuleiro com suporte a drag and drop
@@ -363,16 +392,22 @@ function renderBoard() {
                 tile.classList.add('correct-position');
             }
             
-            // Adicionar eventos de drag and drop
-            tile.addEventListener('mousedown', startDrag);
-            tile.addEventListener('touchstart', startDragTouch);
-            
-            // Adicionar evento de clique como fallback
-            tile.addEventListener('click', () => {
-                if (!isDragging) {
-                    moveTile(index);
-                }
-            });
+            // Adicionar eventos de drag and drop (apenas se o tabuleiro estiver habilitado)
+            if (isBoardEnabled()) {
+                tile.addEventListener('mousedown', startDrag);
+                tile.addEventListener('touchstart', startDragTouch);
+                
+                // Adicionar evento de clique como fallback
+                tile.addEventListener('click', () => {
+                    if (!isDragging) {
+                        moveTile(index);
+                    }
+                });
+                
+                tile.style.cursor = 'grab';
+            } else {
+                tile.style.cursor = 'not-allowed';
+            }
         }
         
         puzzleBoard.appendChild(tile);
@@ -388,8 +423,9 @@ function renderBoard() {
     }
 }
 
-// Iniciar arrastar (mouse)
+// Iniciar arrastar (mouse) - AGORA VERIFICA SE TABULEIRO ESTÁ HABILITADO
 function startDrag(e) {
+    if (!isBoardEnabled()) return;
     if (gameCompleted) return;
     
     const tile = e.target;
@@ -413,8 +449,9 @@ function startDrag(e) {
     }
 }
 
-// Iniciar arrastar (touch)
+// Iniciar arrastar (touch) - AGORA VERIFICA SE TABULEIRO ESTÁ HABILITADO
 function startDragTouch(e) {
+    if (!isBoardEnabled()) return;
     if (gameCompleted) return;
     
     const tile = e.target;
@@ -511,6 +548,8 @@ function endDragTouch() {
 
 // Verificar se uma peça pode ser movida
 function isMovable(index) {
+    if (!isBoardEnabled()) return false;
+    
     const row = Math.floor(index / 4);
     const col = index % 4;
     const emptyRow = Math.floor(emptyTileIndex / 4);
@@ -523,6 +562,7 @@ function isMovable(index) {
 
 // Mover uma peça
 function moveTile(index) {
+    if (!isBoardEnabled()) return;
     if (gameCompleted || !isMovable(index)) return;
     
     // Trocar a peça com o espaço vazio
@@ -551,7 +591,7 @@ function moveTile(index) {
     }
 }
 
-// Embaralhar o tabuleiro
+// Embaralhar o tabuleiro - MODIFICADO: Agora habilita o tabuleiro e reinicia o timer
 function shuffleBoard() {
     if (gameCompleted) {
         resetGame();
@@ -559,10 +599,7 @@ function shuffleBoard() {
     }
     
     // Parar o timer se estiver rodando
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
+    stopTimer();
     
     // Reiniciar variáveis
     moves = 0;
@@ -572,6 +609,9 @@ function shuffleBoard() {
     updateMoveCounter();
     resetTimer();
     completionMessage.style.display = 'none';
+    
+    // HABILITAR o tabuleiro ao embaralhar
+    enableBoard();
     
     // Embaralhar o tabuleiro
     let shuffleCount;
@@ -613,7 +653,7 @@ function shuffleBoard() {
     renderBoard();
 }
 
-// Mostrar a solução
+// Mostrar a solução - MODIFICADO: Desabilita o tabuleiro e para o timer
 function showSolution() {
     // Criar tabuleiro ordenado
     if (currentTheme === 'custom-image' && customImageData) {
@@ -625,18 +665,16 @@ function showSolution() {
     renderBoard();
     
     // Parar o timer
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
+    stopTimer();
     
-    // Marcar jogo como concluído
+    // Marcar jogo como concluído e DESABILITAR tabuleiro
     gameCompleted = true;
     gameStarted = false;
     gameActive = false;
+    disableBoard();
 }
 
-// Reiniciar o jogo
+// Reiniciar o jogo - MODIFICADO: Mantém estado de habilitação (se estava habilitado antes, fica habilitado)
 function resetGame() {
     moves = 0;
     gameStarted = false;
@@ -649,10 +687,19 @@ function resetGame() {
     // Criar tabuleiro ordenado
     createBoard();
     renderBoard();
+    
+    // Se o tabuleiro estava habilitado antes, mantém habilitado
+    if (boardEnabled) {
+        enableBoard();
+    } else {
+        disableBoard();
+    }
 }
 
-// Mostrar dica
+// Mostrar dica - AGORA VERIFICA SE TABULEIRO ESTÁ HABILITADO
 function showHint() {
+    if (!isBoardEnabled()) return;
+    
     // Encontrar a primeira peça fora do lugar que pode ser movida
     for (let i = 0; i < board.length; i++) {
         let correctValue;
@@ -697,16 +744,16 @@ function checkWin() {
     return board[15] === null;
 }
 
-// Concluir o jogo
+// Concluir o jogo - MODIFICADO: Desabilita o tabuleiro ao completar
 function completeGame() {
     gameCompleted = true;
     gameActive = false;
     
     // Parar o timer
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
+    stopTimer();
+    
+    // DESABILITAR tabuleiro ao completar
+    disableBoard();
     
     // Mostrar mensagem de conclusão
     finalMoves.textContent = moves;
@@ -771,16 +818,21 @@ function startTimer() {
     }, 1000);
 }
 
+// FUNÇÃO NOVA: Parar timer
+function stopTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+}
+
 // Resetar timer
 function resetTimer() {
     timer = 0;
     if (timerElement) {
         timerElement.textContent = '00:00';
     }
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
+    stopTimer();
 }
 
 // Formatar tempo (MM:SS)
@@ -941,24 +993,20 @@ function setupEventListeners() {
     if (navHome) navHome.addEventListener('click', () => showSection('home-section'));
     if (navGame) navGame.addEventListener('click', () => {
         showSection('game-section');
-        resetGame();
+        // NÃO reseta o jogo automaticamente ao clicar na aba "Jogar"
+        // Apenas mostra a seção, mantendo o estado atual do jogo
     });
     if (navRanking) navRanking.addEventListener('click', () => {
         showSection('ranking-section');
         loadRanking();
     });
     
-    // CORREÇÃO CRÍTICA: Navegação para Progresso - DEBUG INTENSIVO
+    // Navegação para Progresso
     if (navProgress) {
         console.log("🎯 Configurando listener para nav-progress");
         navProgress.addEventListener('click', function(e) {
             e.preventDefault();
             console.log("🖱️ Clicou em Progresso!");
-            console.log("👤 Estado do usuário:", {
-                currentUser: currentUser ? "Logado" : "Não logado",
-                isGuest: isGuest,
-                uid: currentUser ? currentUser.uid : "N/A"
-            });
             
             showSection('progress-section');
             
@@ -987,7 +1035,7 @@ function setupEventListeners() {
         console.error("❌ Elemento nav-progress não encontrado!");
     }
     
-    // 🔥 NAVEGAÇÃO PARA TEMAS - GARANTIDO
+    // Navegação para Temas
     if (navThemes) {
         navThemes.addEventListener('click', function(e) {
             e.preventDefault();
@@ -1131,7 +1179,7 @@ function setupEventListeners() {
         themeImageFileInput.addEventListener('change', previewThemeImage);
     }
     
-    // Embaralhar o tabuleiro inicialmente
+    // Embaralhar o tabuleiro inicialmente (e habilitá-lo)
     shuffleBoard();
     
     console.log("✅ Event listeners configurados!");
@@ -1157,7 +1205,7 @@ function quickPlay() {
     mainApp.classList.add('active');
     updateUIForLoggedOutUser();
     showSection('game-section');
-    shuffleBoard();
+    shuffleBoard(); // Isso automaticamente habilita o tabuleiro
 }
 
 // Mostrar seção específica
@@ -1471,7 +1519,6 @@ async function handleLogin(e) {
         }
         
         // Fazer login com Firebase Auth
-        // Garante que o usuário permaneça logado mesmo fechando o navegador ou dando F5
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
@@ -1745,7 +1792,7 @@ function updateUIForAdmin(isAdmin) {
     }
 }
 
-// Mudar tema
+// Mudar tema - MODIFICADO: Desabilita o tabuleiro e para o timer
 function changeTheme(theme) {
     if (!themes[theme] && !theme.startsWith('saved-')) return;
     
@@ -1770,6 +1817,12 @@ function changeTheme(theme) {
         // Atualizar nome do tema na interface
         document.getElementById('current-theme').textContent = themes[theme].name;
         
+        // DESABILITAR tabuleiro e PARAR TIMER ao mudar de tema
+        disableBoard();
+        stopTimer();
+        resetTimer();
+        gameStarted = false;
+        
         // Recriar o tabuleiro com o novo tema
         createBoard();
         renderBoard();
@@ -1782,7 +1835,7 @@ function changeTheme(theme) {
     }
 }
 
-// 🔥 FUNÇÃO SIMPLIFICADA E GARANTIDA para carregar temas para JOGADORES
+// Carregar temas para JOGADORES
 async function loadThemesForPlayers() {
     console.log("🚀 loadThemesForPlayers() iniciada");
     
@@ -1882,7 +1935,7 @@ async function loadThemesForPlayers() {
     }
 }
 
-// 🔥 Função para carregar e usar um tema salvo
+// Função para carregar e usar um tema salvo - MODIFICADO: Desabilita tabuleiro e para timer
 async function loadAndUseSavedTheme(themeId) {
     try {
         console.log(`🔄 Carregando tema ID: ${themeId}`);
@@ -1895,7 +1948,7 @@ async function loadAndUseSavedTheme(themeId) {
         }
         
         const themeData = themeDoc.data();
-        console.log("📸 Preview URL:", themeData.preview); // Log para verificar
+        console.log("📸 Preview URL:", themeData.preview);
         
         // Atualizar variáveis globais
         customImageData = themeData.pieces || [];
@@ -1904,6 +1957,12 @@ async function loadAndUseSavedTheme(themeId) {
         
         // Atualizar interface
         document.getElementById('current-theme').textContent = themeData.name || 'Imagem Personalizada';
+        
+        // DESABILITAR tabuleiro e PARAR TIMER ao carregar novo tema
+        disableBoard();
+        stopTimer();
+        resetTimer();
+        gameStarted = false;
         
         // Recriar o jogo com o novo tema
         createBoard();
@@ -1942,6 +2001,12 @@ async function loadSavedTheme(themeId) {
             
             // Atualizar nome do tema na interface
             document.getElementById('current-theme').textContent = themeData.name;
+            
+            // DESABILITAR tabuleiro e PARAR TIMER ao carregar novo tema
+            disableBoard();
+            stopTimer();
+            resetTimer();
+            gameStarted = false;
             
             // Recriar o tabuleiro com o novo tema
             createBoard();
@@ -2064,7 +2129,7 @@ function handleImageUpload(e) {
     reader.readAsDataURL(file);
 }
 
-// Usar imagem personalizada
+// Usar imagem personalizada - MODIFICADO: Desabilita o tabuleiro e para o timer
 function useCustomImage() {
     if (!customImageData) {
         alert('Por favor, faça upload de uma imagem primeiro.');
@@ -2077,6 +2142,12 @@ function useCustomImage() {
     // Mudar para o tema de imagem personalizada
     currentTheme = 'custom-image';
     document.getElementById('current-theme').textContent = 'Imagem Personalizada';
+    
+    // DESABILITAR tabuleiro e PARAR TIMER ao usar nova imagem
+    disableBoard();
+    stopTimer();
+    resetTimer();
+    gameStarted = false;
     
     // Criar tabuleiro com imagem personalizada
     createBoard();
@@ -2109,7 +2180,7 @@ async function saveCustomImageAsTheme() {
         const themeData = {
             name: themeName,
             pieces: customImageData,
-            preview: customImagePreview, // Garantir que o preview seja salvo
+            preview: customImagePreview,
             createdBy: currentUser.uid,
             createdByName: currentUser.displayName || currentUser.email.split('@')[0],
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2152,7 +2223,7 @@ async function savePuzzleAsTheme() {
         const themeData = {
             name: themeName,
             pieces: customImageData,
-            preview: customImagePreview, // Garantir que o preview seja salvo
+            preview: customImagePreview,
             createdBy: currentUser.uid,
             createdByName: currentUser.displayName || currentUser.email.split('@')[0],
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2181,7 +2252,7 @@ async function loadSavedThemes() {
         // Limpar grid
         savedThemesGrid.innerHTML = '<p class="no-themes">Carregando temas...</p>';
         
-        // Buscar temas salvos - AGORA FUNCIONA SEM AUTENTICAÇÃO
+        // Buscar temas salvos
         const themesSnapshot = await db.collection('savedThemes')
             .orderBy('createdAt', 'desc')
             .limit(20)
@@ -2483,8 +2554,8 @@ async function handleThemeSave(e) {
             document.getElementById('theme-image-preview').style.display = 'none';
             
             // Recarregar temas em TODAS as seções
-            loadThemesForPlayers(); // Para a seção de Temas (JOGADORES)
-            loadAdminThemes(); // Para a aba de administração
+            loadThemesForPlayers();
+            loadAdminThemes();
             
             // Se estiver na seção de temas, forçar atualização visual
             if (themesSection.classList.contains('active')) {
@@ -2792,7 +2863,7 @@ async function loadGlobalStats() {
     }
 }
 
-// Carregar progresso do usuário - CORRIGIDO E COM DEBUG
+// Carregar progresso do usuário
 async function loadUserProgress() {
     console.log("🚀 loadUserProgress() INICIADA");
     console.log("👤 Estado do usuário:", {
@@ -2810,7 +2881,6 @@ async function loadUserProgress() {
         console.log(`📡 Buscando todas as pontuações...`);
         
         // BUSCA SIMPLIFICADA: Pegue TODAS as pontuações e filtre localmente
-        // Isso é menos eficiente, mas não requer índice
         const scoresSnapshot = await db.collection('scores').get();
         
         console.log(`✅ ${scoresSnapshot.size} pontuações totais encontradas`);
@@ -3512,7 +3582,7 @@ async function handleEditUser(userId) {
     }
 }
 
-// CORRIGIDA: Carregar pontuações para administração
+// Carregar pontuações para administração
 async function loadAdminScores() {
     const loadingElement = document.getElementById('admin-scores-loading');
     const scoresListElement = document.getElementById('admin-scores-list');
@@ -3582,10 +3652,9 @@ async function loadAdminScores() {
                 passesFilters = false;
             }
             
-            // Filtro de data (CORRIGIDO - considera fuso horário)
+            // Filtro de data
             if (dateFilter) {
                 try {
-                    // Criar data do filtro considerando fuso horário local
                     // Dividir a data no formato YYYY-MM-DD
                     const [year, month, day] = dateFilter.split('-').map(Number);
                     
@@ -3608,7 +3677,6 @@ async function loadAdminScores() {
                     
                 } catch (e) {
                     console.error("❌ Erro ao filtrar por data:", e);
-                    // Se houver erro no filtro de data, mostrar todos os dados
                 }
             }
             
@@ -3623,7 +3691,7 @@ async function loadAdminScores() {
         
         console.log(`✅ ${scores.length} pontuações carregadas após filtros`);
         
-        // Função para formatar data do filtro (corrigida para fuso horário)
+        // Função para formatar data do filtro
         function formatFilterDate(dateStr) {
             const [year, month, day] = dateStr.split('-').map(Number);
             const date = new Date(year, month - 1, day);
@@ -3739,7 +3807,7 @@ async function loadAdminScores() {
     }
 }
 
-// Função para resetar filtros de pontuações (com feedback visual)
+// Função para resetar filtros de pontuações
 function resetAdminScoreFilters() {
     console.log("🧹 Resetando filtros...");
     
@@ -3774,25 +3842,6 @@ function resetAdminScoreFilters() {
     
     // Recarregar dados
     loadAdminScores();
-}
-
-// Adicionar também uma função para debug das datas
-function debugDateFilter(dateFilter, scoreDate) {
-    console.log("🔍 Debug de filtro de data:");
-    console.log("Data do filtro:", dateFilter);
-    console.log("Data do score:", scoreDate);
-    
-    const filterDate = new Date(dateFilter);
-    filterDate.setHours(0, 0, 0, 0);
-    
-    const scoreDateStart = new Date(scoreDate);
-    scoreDateStart.setHours(0, 0, 0, 0);
-    
-    console.log("Filtro (início do dia):", filterDate);
-    console.log("Score (início do dia):", scoreDateStart);
-    console.log("São iguais?", filterDate.getTime() === scoreDateStart.getTime());
-    
-    return filterDate.getTime() === scoreDateStart.getTime();
 }
 
 // Limpar pontuações antigas
@@ -3888,6 +3937,3 @@ async function handleAdminRegister(e) {
         showFormMessage(msgEl, "Erro: " + error.message, 'error');
     }
 }
-
-
-
