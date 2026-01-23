@@ -2241,7 +2241,43 @@ body {
     color: white;
     border: 1px solid rgba(26, 26, 26, 0.3);
 }
+/* --------------------------------------------------------------- */
+/* Estilo para peças desabilitadas */
+.puzzle-tile.disabled {
+    cursor: default !important;
+    opacity: 0.9;
+    pointer-events: none;
+}
 
+/* Estilo específico para peças desabilitadas com imagens */
+.puzzle-tile.image-piece.disabled {
+    filter: brightness(0.9);
+}
 
+/* Feedback visual quando o tabuleiro está desabilitado */
+.puzzle-board.disabled-board .puzzle-tile {
+    cursor: default !important;
+    pointer-events: none;
+}
 
+/* Estilo para indicar que o jogo está completo */
+.game-completed .puzzle-tile {
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+}
 
+/* Ajuste no cursor para arraste durante o jogo ativo */
+.puzzle-tile:not(.empty):not(.disabled) {
+    cursor: grab;
+}
+
+.puzzle-tile:not(.empty):not(.disabled):hover {
+    transform: scale(1.02);
+    transition: transform 0.2s;
+}
+
+.puzzle-tile.dragging {
+    cursor: grabbing !important;
+    z-index: 100;
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
